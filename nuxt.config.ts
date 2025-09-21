@@ -4,6 +4,8 @@ export default defineNuxtConfig({
 	devtools: { enabled: true },
 	modules: ["@nuxt/scripts", "@nuxt/test-utils", "@nuxt/ui"],
 	runtimeConfig: {
+		redditUsername: process.env.REDDIT_USERNAME,
+		redditSecretToken: process.env.REDDIT_SECRET_TOKEN,
 		public: {
 			supabaseUrl: process.env.SUPABASE_URL,
 			supabasePublishableKey: process.env.SUPABASE_PUBLISHABLE_KEY,
