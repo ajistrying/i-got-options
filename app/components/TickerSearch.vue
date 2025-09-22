@@ -26,6 +26,7 @@
         </UButton>
         <UButton
           size="lg"
+          class="cursor-pointer"
           variant="outline"
           @click="clearForm"
           :disabled="loading"

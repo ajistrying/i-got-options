@@ -29,11 +29,6 @@
             ref="searchHistoryRef"
           />
         </UCard>
-
-        <!-- Search Results -->
-        <div v-if="searchResults">
-          <SearchResults :results="searchResults" />
-        </div>
       </div>
     </div>
   </div>
@@ -75,7 +70,7 @@ const handleSelectSearch = async (search: any) => {
         })),
         total_posts: data.reduce((sum, item) => sum + item.search_data.length, 0)
       };
-      searchResults.value = formattedResults;
+      
     }
   } catch (error) {
     console.error('Failed to load search details:', error);
