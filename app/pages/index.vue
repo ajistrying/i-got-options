@@ -5,7 +5,7 @@
       <div class="text-center mb-10">
         <h1 class="text-4xl font-bold mb-3">Stock Options Research Hub</h1>
         <p class="text-gray-600 dark:text-gray-400 text-lg">
-          Search Reddit for stock discussions and build comprehensive trading insights
+          Options Trading Sentiment Research
         </p>
       </div>
 
