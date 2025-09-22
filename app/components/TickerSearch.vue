@@ -1,14 +1,38 @@
 <template>
   <div class="space-y-4">
-    <!-- Ticker Input -->
-    <div>
-      <label class="block text-sm font-medium mb-2">Stock Ticker</label>
-      <UInput
-        v-model="ticker"
-        placeholder="Enter stock ticker (e.g., AAPL, GME, SPY)"
-        size="lg"
-        @keyup.enter="handleSearch"
-      />
+    <div class="flex flex-row gap-4 w-full">
+      <!-- Ticker Input -->
+      <div class="flex-1">
+        <UInput
+          v-model="ticker"
+          placeholder="Enter stock ticker (e.g., AAPL, GME, SPY)"
+          size="lg"
+          class="w-full"
+          @keyup.enter="handleSearch"
+        />
+      </div>
+
+      <!-- Search Button -->
+      <div class="flex gap-3">
+        <UButton
+          size="lg"
+          @click="handleSearch"
+          :loading="loading"
+          :disabled="!ticker || selectedSubreddits.length === 0 || loading"
+          class="flex-1 cursor-pointer"
+          color="primary"
+        >
+          Search
+        </UButton>
+        <UButton
+          size="lg"
+          variant="outline"
+          @click="clearForm"
+          :disabled="loading"
+        >
+          Clear
+        </UButton>
+      </div>
     </div>
 
     <!-- Subreddit Selection -->
@@ -24,8 +48,8 @@
           <UCheckbox
             v-for="sub in availableSubreddits"
             :key="sub.id"
-            v-model="selectedSubreddits"
-            :value="sub.subreddit_name"
+            :model-value="selectedSubreddits.includes(sub.subreddit_name)"
+            @update:model-value="(checked: boolean) => toggleSubreddit(sub.subreddit_name, checked)"
             :label="`r/${sub.subreddit_name}`"
           />
         </div>
@@ -54,27 +78,7 @@
       </UBadge>
     </div>
 
-    <!-- Search Button -->
-    <div class="flex gap-3">
-      <UButton
-        size="lg"
-        @click="handleSearch"
-        :loading="loading"
-        :disabled="!ticker || selectedSubreddits.length === 0 || loading"
-        class="flex-1"
-        color="primary"
-      >
-        Search Reddit
-      </UButton>
-      <UButton
-        size="lg"
-        variant="outline"
-        @click="clearForm"
-        :disabled="loading"
-      >
-        Clear
-      </UButton>
-    </div>
+    
 
     <!-- Validation Message -->
     <UAlert 
@@ -113,6 +117,16 @@ const loadSubreddits = async () => {
     console.error('Failed to load subreddits:', error);
   } finally {
     loadingSubreddits.value = false;
+  }
+};
+
+const toggleSubreddit = (subreddit: string, checked: boolean) => {
+  if (checked) {
+    if (!selectedSubreddits.value.includes(subreddit)) {
+      selectedSubreddits.value.push(subreddit);
+    }
+  } else {
+    selectedSubreddits.value = selectedSubreddits.value.filter(s => s !== subreddit);
   }
 };
 
