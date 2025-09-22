@@ -12,6 +12,13 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  if (!subreddits || !Array.isArray(subreddits) || subreddits.length === 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'At least one subreddit must be selected'
+    });
+  }
+
   // Initialize Supabase client
   const supabase = createClient(
     config.public.supabaseUrl,
@@ -20,7 +27,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     const searchResults = [];
-    const subredditsToSearch = subreddits && subreddits.length > 0 ? subreddits : ['wallstreetbets', 'options', 'stocks'];
+    const subredditsToSearch = subreddits;
     
     // Search each subreddit using Reddit's public JSON API
     for (const subreddit of subredditsToSearch) {

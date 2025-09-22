@@ -1,45 +1,84 @@
 <template>
-	<div class="min-h-screen bg-gray-50 dark:bg-gray-950">
-		<div class="container mx-auto p-6 max-w-7xl">
-			<div class="mb-8">
-				<h1 class="text-3xl font-bold mb-2">Stock Options Research Hub</h1>
-				<p class="text-gray-600 dark:text-gray-400">OptionsThing</p>
-			</div>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div class="container mx-auto px-4 sm:px-6 py-8 max-w-6xl">
+      <!-- Header -->
+      <div class="text-center mb-10">
+        <h1 class="text-4xl font-bold mb-3">Stock Options Research Hub</h1>
+        <p class="text-gray-600 dark:text-gray-400 text-lg">
+          Search Reddit for stock discussions and build comprehensive trading insights
+        </p>
+      </div>
 
-			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				<div class="lg:col-span-2 space-y-6">
-					<UCard>
-						<template #header>
-							<h2 class="text-lg font-semibold">Search Ticker</h2>
-						</template>
-						<TickerSearch @search-complete="handleSearchComplete" />
-					</UCard>
+      <!-- Main Content - Centered Layout -->
+      <div class="w-full max-w-5xl mx-auto space-y-8">
+        <!-- Search Section -->
+        <UCard class="shadow-lg">
+          <template #header>
+            <h2 class="text-xl font-semibold">Search Ticker</h2>
+          </template>
+          <TickerSearch 
+            @search-complete="handleSearchComplete" 
+            ref="tickerSearchRef"
+          />
+        </UCard>
 
-					<SearchResults :results="searchResults" />
-				</div>
+        <!-- Search History Section -->
+        <UCard class="shadow-lg">
+          <SearchHistory 
+            @select-search="handleSelectSearch"
+            ref="searchHistoryRef"
+          />
+        </UCard>
 
-				<div class="space-y-6">
-					<UCard>
-						<SubredditManager />
-					</UCard>
-
-					<UCard v-if="lastSearchedTicker">
-						<DossierView :ticker="lastSearchedTicker" />
-					</UCard>
-				</div>
-			</div>
-		</div>
-	</div>
+        <!-- Search Results -->
+        <div v-if="searchResults">
+          <SearchResults :results="searchResults" />
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 const searchResults = ref(null);
-const lastSearchedTicker = ref("");
+const searchHistoryRef = ref(null);
+const tickerSearchRef = ref(null);
 
 const handleSearchComplete = (results: any) => {
-	searchResults.value = results;
-	if (results?.ticker) {
-		lastSearchedTicker.value = results.ticker;
-	}
+  searchResults.value = results;
+  // Refresh the search history to show the new search
+  if (searchHistoryRef.value) {
+    searchHistoryRef.value.refreshHistory();
+  }
+};
+
+const handleSelectSearch = async (search: any) => {
+  // Load the full search results for the selected search
+  try {
+    const { supabase } = useSupabase();
+    const { data } = await supabase
+      .from('ticker_searches')
+      .select('*')
+      .eq('ticker', search.ticker)
+      .eq('created_at', search.created_at)
+      .order('created_at', { ascending: false });
+    
+    if (data && data.length > 0) {
+      // Format the data to match the expected structure
+      const formattedResults = {
+        ticker: search.ticker,
+        timestamp: search.created_at,
+        results: data.map(item => ({
+          subreddit: item.subreddit,
+          count: item.search_data.length,
+          posts: item.search_data
+        })),
+        total_posts: data.reduce((sum, item) => sum + item.search_data.length, 0)
+      };
+      searchResults.value = formattedResults;
+    }
+  } catch (error) {
+    console.error('Failed to load search details:', error);
+  }
 };
 </script>
