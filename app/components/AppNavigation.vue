@@ -3,9 +3,6 @@
     <div class="container mx-auto px-6">
       <div class="flex items-center justify-between h-16">
         <div class="flex items-center space-x-8">
-          <NuxtLink to="/" class="text-xl font-bold">
-            Options Research Hub
-          </NuxtLink>
           <div class="hidden md:flex space-x-4">
             <NuxtLink
               to="/"

@@ -17,9 +17,6 @@
           <h1 class="text-4xl font-bold text-primary-600 dark:text-primary-400">
             {{ ticker }}
           </h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Ticker Workbench
-          </p>
         </div>
 
         <!-- Search Info -->
@@ -27,11 +24,7 @@
           <div class="text-sm text-gray-600 dark:text-gray-400">
             <div v-if="lastSearchTime" class="flex items-center space-x-2">
               <UIcon name="i-heroicons-clock" class="w-4 h-4" />
-              <span>Last searched: {{ formatDate(lastSearchTime) }}</span>
-            </div>
-            <div v-if="totalSearches" class="flex items-center space-x-2 mt-1">
-              <UIcon name="i-heroicons-magnifying-glass" class="w-4 h-4" />
-              <span>{{ totalSearches }} {{ totalSearches === 1 ? 'search' : 'searches' }} performed</span>
+              <span>Last search ran: {{ formatDateString(lastSearchTime) }}</span>
             </div>
           </div>
         </div>
@@ -45,17 +38,8 @@
           icon="i-heroicons-arrow-path"
           :loading="refreshing"
         >
-          New Search
+          Run New Search
         </UButton>
-        
-        <UDropdown :items="menuItems" :popper="{ placement: 'bottom-end' }">
-          <UButton 
-            color="gray" 
-            variant="ghost"
-            icon="i-heroicons-ellipsis-vertical"
-            size="sm"
-          />
-        </UDropdown>
       </div>
     </div>
   </div>
