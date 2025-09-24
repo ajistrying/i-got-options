@@ -19,9 +19,6 @@
               {{ stats.sentiment?.positive || 65 }}% positive
             </p>
           </div>
-          <div :class="sentimentBgColor" class="p-3 rounded-full">
-            <UIcon name="i-heroicons-face-smile" class="w-6 h-6" :class="sentimentIconColor" />
-          </div>
         </div>
       </UCard>
 
@@ -40,9 +37,6 @@
               from {{ stats.analystRating?.count || 12 }} analysts
             </p>
           </div>
-          <div class="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
-            <UIcon name="i-heroicons-chart-bar" class="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          </div>
         </div>
       </UCard>
 
@@ -55,14 +49,11 @@
               ${{ stats.currentPrice || '145.32' }}
             </p>
             <div class="flex items-center space-x-1 mt-1">
-              <UIcon :name="priceChangeIcon" class="w-4 h-4" :class="priceChangeColor" />
+              <UIcon :name="priceChangeIcon" class="w-6 h-4" :class="priceChangeColor" />
               <span class="text-xs" :class="priceChangeColor">
                 {{ priceChangeDisplay }}
               </span>
             </div>
-          </div>
-          <div class="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
-            <UIcon name="i-heroicons-currency-dollar" class="w-6 h-6 text-purple-600 dark:text-purple-400" />
           </div>
         </div>
       </UCard>
@@ -82,69 +73,52 @@
               {{ stats.memeFactor?.momentum || '🔥 Hot' }}
             </p>
           </div>
-          <div class="p-3 bg-orange-100 dark:bg-orange-900 rounded-full">
-            <UIcon name="i-heroicons-fire" class="w-6 h-6 text-orange-600 dark:text-orange-400" />
-          </div>
         </div>
       </UCard>
     </div>
 
     <!-- Sentiment Distribution -->
-    <div class="grid grid-cols-1 gap-6">
-      <UCard class="shadow-lg">
-        <template #header>
-          <h3 class="text-lg font-semibold">Sentiment Distribution</h3>
-        </template>
-        <div class="space-y-4">
-          <!-- Sentiment Bars -->
-          <div v-if="sentimentDistribution.length > 0" class="space-y-3">
-            <div 
-              v-for="item in sentimentDistribution" 
-              :key="item.label"
-              class="flex items-center justify-between"
-            >
-              <div class="flex items-center space-x-3 flex-1">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 w-24">
-                  {{ item.label }}
-                </span>
-                <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                  <div 
-                    class="h-3 rounded-full transition-all duration-500"
-                    :class="getSentimentBarColor(item.label)"
-                    :style="{ width: `${item.value}%` }"
-                  />
-                </div>
-                <span class="text-sm text-gray-600 dark:text-gray-400 w-12 text-right">
-                  {{ item.value }}%
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Summary Stats -->
-          <div class="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div class="text-center">
-              <p class="text-2xl font-bold text-green-600 dark:text-green-400">
-                {{ positiveSentimentTotal }}%
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Positive</p>
-            </div>
-            <div class="text-center">
-              <p class="text-2xl font-bold text-gray-600 dark:text-gray-400">
-                {{ neutralSentimentTotal }}%
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Neutral</p>
-            </div>
-            <div class="text-center">
-              <p class="text-2xl font-bold text-red-600 dark:text-red-400">
-                {{ negativeSentimentTotal }}%
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Negative</p>
-            </div>
-          </div>
+    <UCard>
+      <template #header>
+        <h3 class="text-base font-medium">Overall Sentiment Distribution</h3>
+      </template>
+      <!-- Streamlined horizontal bar chart -->
+      <div class="flex h-8 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
+        <div
+          :style="{ width: `${positiveSentimentTotal}%` }"
+          class="bg-green-500 dark:bg-green-600 transition-all duration-500"
+        />
+        <div
+          :style="{ width: `${neutralSentimentTotal}%` }"
+          class="bg-gray-400 dark:bg-gray-500 transition-all duration-500"
+        />
+        <div
+          :style="{ width: `${negativeSentimentTotal}%` }"
+          class="bg-red-500 dark:bg-red-600 transition-all duration-500"
+        />
+      </div>
+      <!-- Compact legend -->
+      <div class="flex justify-between mt-3">
+        <div class="flex items-center space-x-1">
+          <div class="w-3 h-3 rounded-full bg-green-500 dark:bg-green-600" />
+          <span class="text-sm text-gray-600 dark:text-gray-400">
+            Positive {{ positiveSentimentTotal }}%
+          </span>
         </div>
-      </UCard>
-    </div>
+        <div class="flex items-center space-x-1">
+          <div class="w-3 h-3 rounded-full bg-gray-400 dark:bg-gray-500" />
+          <span class="text-sm text-gray-600 dark:text-gray-400">
+            Neutral {{ neutralSentimentTotal }}%
+          </span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <div class="w-3 h-3 rounded-full bg-red-500 dark:bg-red-600" />
+          <span class="text-sm text-gray-600 dark:text-gray-400">
+            Negative {{ negativeSentimentTotal }}%
+          </span>
+        </div>
+      </div>
+    </UCard>
   </div>
 </template>
 
