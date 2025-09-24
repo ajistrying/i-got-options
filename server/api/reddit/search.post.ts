@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
     for (const subreddit of subredditsToSearch) {
       try {
         const searchUrl = `https://www.reddit.com/r/${subreddit}/search.json`;
-        const searchResponse = await $fetch(searchUrl, {
+        const searchResponse: any = await $fetch(searchUrl, {
           headers: {
             'User-Agent': 'OptionsTracker/1.0'
           },
