@@ -73,6 +73,15 @@
 					<div class="flex items-center space-x-2">
 						<UButton
 							size="xs"
+							variant="soft"
+							@click.stop="navigateToWorkbench(tickerGroup.ticker)"
+							icon="i-heroicons-beaker"
+							class="text-primary-600 hover:bg-primary-100"
+						>
+							Open Workbench
+						</UButton>
+						<UButton
+							size="xs"
 							variant="ghost"
 							@click.stop="$emit('select-search', tickerGroup.mostRecentSearch)"
 							class="text-gray-500 hover:text-primary-600"
@@ -382,6 +391,10 @@ const deleteAllSearchesForTicker = async (ticker: string) => {
 	} catch (error) {
 		console.error("Failed to delete searches:", error);
 	}
+};
+
+const navigateToWorkbench = (ticker: string) => {
+	navigateTo(`/ticker/${ticker}`);
 };
 
 onMounted(() => {
