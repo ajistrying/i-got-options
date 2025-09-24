@@ -1,130 +1,150 @@
 <template>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <!-- Total Posts -->
-    <UCard class="relative overflow-hidden">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Total Posts</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ stats.totalPosts || 0 }}
-          </p>
-        </div>
-        <div class="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
-          <UIcon name="i-heroicons-document-text" class="w-6 h-6 text-blue-600 dark:text-blue-400" />
-        </div>
-      </div>
-    </UCard>
-
-    <!-- Average Score -->
-    <UCard class="relative overflow-hidden">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Avg Score</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ stats.averageScore || 0 }}
-          </p>
-        </div>
-        <div class="p-3 bg-green-100 dark:bg-green-900 rounded-full">
-          <UIcon name="i-heroicons-arrow-trending-up" class="w-6 h-6 text-green-600 dark:text-green-400" />
-        </div>
-      </div>
-    </UCard>
-
-    <!-- Total Comments -->
-    <UCard class="relative overflow-hidden">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Total Comments</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ formatNumber(stats.totalComments || 0) }}
-          </p>
-        </div>
-        <div class="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
-          <UIcon name="i-heroicons-chat-bubble-left-right" class="w-6 h-6 text-purple-600 dark:text-purple-400" />
-        </div>
-      </div>
-    </UCard>
-
-    <!-- Active Subreddits -->
-    <UCard class="relative overflow-hidden">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Subreddits</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ stats.uniqueSubreddits || 0 }}
-          </p>
-        </div>
-        <div class="p-3 bg-orange-100 dark:bg-orange-900 rounded-full">
-          <UIcon name="i-heroicons-user-group" class="w-6 h-6 text-orange-600 dark:text-orange-400" />
-        </div>
-      </div>
-    </UCard>
-  </div>
-
-  <!-- Additional Stats Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <!-- Top Post -->
-    <UCard v-if="stats.topPost" class="shadow-lg">
-      <template #header>
+  <div>
+    <!-- Main Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <!-- Sentiment Score -->
+      <UCard class="relative overflow-hidden">
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold">Top Post</h3>
-          <UBadge color="green" variant="subtle">
-            Score: {{ stats.topPost.score }}
-          </UBadge>
+          <div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Sentiment</p>
+            <div class="flex items-center space-x-2">
+              <p class="text-2xl font-bold" :class="sentimentColor">
+                {{ sentimentDisplay }}
+              </p>
+              <span class="text-sm" :class="sentimentColor">
+                {{ sentimentEmoji }}
+              </span>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {{ stats.sentiment?.positive || 65 }}% positive
+            </p>
+          </div>
+          <div :class="sentimentBgColor" class="p-3 rounded-full">
+            <UIcon name="i-heroicons-face-smile" class="w-6 h-6" :class="sentimentIconColor" />
+          </div>
         </div>
-      </template>
-      <div class="space-y-3">
-        <p class="font-medium text-gray-900 dark:text-gray-100 line-clamp-2">
-          {{ stats.topPost.title }}
-        </p>
-        <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>r/{{ stats.topPost.subreddit }}</span>
-          <span>{{ stats.topPost.num_comments }} comments</span>
-        </div>
-        <div class="flex items-center space-x-2">
-          <a 
-            :href="stats.topPost.permalink" 
-            target="_blank"
-            class="text-primary-600 dark:text-primary-400 hover:underline text-sm flex items-center space-x-1"
-          >
-            <span>View on Reddit</span>
-            <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4" />
-          </a>
-        </div>
-      </div>
-    </UCard>
+      </UCard>
 
-    <!-- Subreddit Distribution -->
-    <UCard class="shadow-lg">
-      <template #header>
-        <h3 class="text-lg font-semibold">Post Distribution</h3>
-      </template>
-      <div v-if="stats.postsBySubreddit && Object.keys(stats.postsBySubreddit).length > 0" class="space-y-3">
-        <div 
-          v-for="[subreddit, count] in sortedSubreddits" 
-          :key="subreddit"
-          class="flex items-center justify-between"
-        >
-          <div class="flex items-center space-x-3 flex-1">
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-              r/{{ subreddit }}
-            </span>
-            <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div 
-                class="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                :style="{ width: `${(count / maxPostCount) * 100}%` }"
-              />
+      <!-- Analyst Rating -->
+      <UCard class="relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Analyst Rating</p>
+            <div class="flex items-center space-x-2">
+              <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {{ stats.analystRating?.score || 4.2 }}
+              </p>
+              <span class="text-sm text-gray-500">/5</span>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              from {{ stats.analystRating?.count || 12 }} analysts
+            </p>
+          </div>
+          <div class="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
+            <UIcon name="i-heroicons-chart-bar" class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+        </div>
+      </UCard>
+
+      <!-- Stock Price -->
+      <UCard class="relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Stock Price</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              ${{ stats.currentPrice || '145.32' }}
+            </p>
+            <div class="flex items-center space-x-1 mt-1">
+              <UIcon :name="priceChangeIcon" class="w-4 h-4" :class="priceChangeColor" />
+              <span class="text-xs" :class="priceChangeColor">
+                {{ priceChangeDisplay }}
+              </span>
             </div>
           </div>
-          <span class="text-sm text-gray-600 dark:text-gray-400 ml-3">
-            {{ count }}
-          </span>
+          <div class="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
+            <UIcon name="i-heroicons-currency-dollar" class="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          </div>
         </div>
-      </div>
-      <div v-else class="text-center text-gray-500 dark:text-gray-400 py-4">
-        No data available
-      </div>
-    </UCard>
+      </UCard>
+
+      <!-- Meme Factor -->
+      <UCard class="relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Meme Factor</p>
+            <div class="flex items-center space-x-2">
+              <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {{ stats.memeFactor?.score || 8.5 }}
+              </p>
+              <span class="text-xl">{{ memeEmoji }}</span>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {{ stats.memeFactor?.momentum || '🔥 Hot' }}
+            </p>
+          </div>
+          <div class="p-3 bg-orange-100 dark:bg-orange-900 rounded-full">
+            <UIcon name="i-heroicons-fire" class="w-6 h-6 text-orange-600 dark:text-orange-400" />
+          </div>
+        </div>
+      </UCard>
+    </div>
+
+    <!-- Sentiment Distribution -->
+    <div class="grid grid-cols-1 gap-6">
+      <UCard class="shadow-lg">
+        <template #header>
+          <h3 class="text-lg font-semibold">Sentiment Distribution</h3>
+        </template>
+        <div class="space-y-4">
+          <!-- Sentiment Bars -->
+          <div v-if="sentimentDistribution.length > 0" class="space-y-3">
+            <div 
+              v-for="item in sentimentDistribution" 
+              :key="item.label"
+              class="flex items-center justify-between"
+            >
+              <div class="flex items-center space-x-3 flex-1">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 w-24">
+                  {{ item.label }}
+                </span>
+                <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div 
+                    class="h-3 rounded-full transition-all duration-500"
+                    :class="getSentimentBarColor(item.label)"
+                    :style="{ width: `${item.value}%` }"
+                  />
+                </div>
+                <span class="text-sm text-gray-600 dark:text-gray-400 w-12 text-right">
+                  {{ item.value }}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Stats -->
+          <div class="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="text-center">
+              <p class="text-2xl font-bold text-green-600 dark:text-green-400">
+                {{ positiveSentimentTotal }}%
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Positive</p>
+            </div>
+            <div class="text-center">
+              <p class="text-2xl font-bold text-gray-600 dark:text-gray-400">
+                {{ neutralSentimentTotal }}%
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Neutral</p>
+            </div>
+            <div class="text-center">
+              <p class="text-2xl font-bold text-red-600 dark:text-red-400">
+                {{ negativeSentimentTotal }}%
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Negative</p>
+            </div>
+          </div>
+        </div>
+      </UCard>
+    </div>
   </div>
 </template>
 
@@ -134,24 +154,117 @@ const props = defineProps<{
   ticker: string;
 }>();
 
-const sortedSubreddits = computed(() => {
-  if (!props.stats.postsBySubreddit) return [];
-  return Object.entries(props.stats.postsBySubreddit)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5); // Show top 5 subreddits
+// Sentiment calculations
+const sentimentScore = computed(() => props.stats.sentiment?.score || 0.55);
+const sentimentDisplay = computed(() => {
+  const score = sentimentScore.value;
+  if (score > 0.5) return 'Bullish';
+  if (score < -0.5) return 'Bearish';
+  return 'Neutral';
 });
 
-const maxPostCount = computed(() => {
-  if (!props.stats.postsBySubreddit) return 0;
-  return Math.max(...Object.values(props.stats.postsBySubreddit));
+const sentimentColor = computed(() => {
+  const score = sentimentScore.value;
+  if (score > 0.5) return 'text-green-600 dark:text-green-400';
+  if (score < -0.5) return 'text-red-600 dark:text-red-400';
+  return 'text-gray-600 dark:text-gray-400';
 });
 
-const formatNumber = (num: number) => {
-  if (num >= 1000000) {
-    return `${(num / 1000000).toFixed(1)}M`;
-  } else if (num >= 1000) {
-    return `${(num / 1000).toFixed(1)}K`;
-  }
-  return num.toString();
+const sentimentBgColor = computed(() => {
+  const score = sentimentScore.value;
+  if (score > 0.5) return 'bg-green-100 dark:bg-green-900';
+  if (score < -0.5) return 'bg-red-100 dark:bg-red-900';
+  return 'bg-gray-100 dark:bg-gray-800';
+});
+
+const sentimentIconColor = computed(() => {
+  const score = sentimentScore.value;
+  if (score > 0.5) return 'text-green-600 dark:text-green-400';
+  if (score < -0.5) return 'text-red-600 dark:text-red-400';
+  return 'text-gray-600 dark:text-gray-400';
+});
+
+const sentimentEmoji = computed(() => {
+  const score = sentimentScore.value;
+  if (score > 0.7) return '🚀';
+  if (score > 0.3) return '📈';
+  if (score < -0.7) return '📉';
+  if (score < -0.3) return '⚠️';
+  return '➖';
+});
+
+// Price change calculations
+const priceChange = computed(() => props.stats.priceChange || 3.45);
+const priceChangePercent = computed(() => props.stats.priceChangePercent || 2.43);
+
+const priceChangeDisplay = computed(() => {
+  const change = priceChange.value;
+  const percent = priceChangePercent.value;
+  const sign = change >= 0 ? '+' : '';
+  return `${sign}$${Math.abs(change).toFixed(2)} (${sign}${percent.toFixed(2)}%)`;
+});
+
+const priceChangeColor = computed(() => {
+  return priceChange.value >= 0 
+    ? 'text-green-600 dark:text-green-400' 
+    : 'text-red-600 dark:text-red-400';
+});
+
+const priceChangeIcon = computed(() => {
+  return priceChange.value >= 0 
+    ? 'i-heroicons-arrow-trending-up' 
+    : 'i-heroicons-arrow-trending-down';
+});
+
+// Meme factor
+const memeEmoji = computed(() => {
+  const score = props.stats.memeFactor?.score || 8.5;
+  if (score >= 9) return '🔥🔥🔥';
+  if (score >= 7) return '🔥🔥';
+  if (score >= 5) return '🔥';
+  if (score >= 3) return '💫';
+  return '❄️';
+});
+
+// Sentiment distribution
+const sentimentDistribution = computed(() => {
+  return props.stats.sentimentDistribution || [
+    { label: "Very Positive", value: 25 },
+    { label: "Positive", value: 40 },
+    { label: "Neutral", value: 25 },
+    { label: "Negative", value: 8 },
+    { label: "Very Negative", value: 2 }
+  ];
+});
+
+const positiveSentimentTotal = computed(() => {
+  const dist = sentimentDistribution.value;
+  return dist
+    .filter(item => item.label.toLowerCase().includes('positive') && !item.label.toLowerCase().includes('negative'))
+    .reduce((sum, item) => sum + item.value, 0);
+});
+
+const neutralSentimentTotal = computed(() => {
+  const dist = sentimentDistribution.value;
+  return dist
+    .filter(item => item.label.toLowerCase().includes('neutral'))
+    .reduce((sum, item) => sum + item.value, 0);
+});
+
+const negativeSentimentTotal = computed(() => {
+  const dist = sentimentDistribution.value;
+  return dist
+    .filter(item => item.label.toLowerCase().includes('negative'))
+    .reduce((sum, item) => sum + item.value, 0);
+});
+
+const getSentimentBarColor = (label: string) => {
+  const lowerLabel = label.toLowerCase();
+  if (lowerLabel.includes('very positive')) return 'bg-green-600';
+  if (lowerLabel.includes('positive') && !lowerLabel.includes('negative')) return 'bg-green-500';
+  if (lowerLabel.includes('neutral')) return 'bg-gray-500';
+  if (lowerLabel.includes('very negative')) return 'bg-red-600';
+  if (lowerLabel.includes('negative')) return 'bg-red-500';
+  return 'bg-gray-500';
 };
 </script>

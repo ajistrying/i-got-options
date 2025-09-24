@@ -30,8 +30,9 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Calculate statistics
+    // Calculate statistics with dummy data for new features
     const stats: any = {
+      // Original stats
       totalSearches: 0,
       totalPosts: 0,
       uniqueSubreddits: 0,
@@ -44,10 +45,60 @@ export default defineEventHandler(async (event) => {
         last: null
       },
       postsBySubreddit: {} as Record<string, number>,
-      postsByDate: {} as Record<string, number>
+      postsByDate: {} as Record<string, number>,
+      
+      // New stats with dummy data
+      // Stock price data
+      currentPrice: 145.32 + Math.random() * 10,
+      priceChange: 3.45 + (Math.random() - 0.5) * 5,
+      priceChangePercent: 2.43 + (Math.random() - 0.5) * 3,
+      
+      // Sentiment analysis
+      sentiment: {
+        positive: 65 + Math.floor(Math.random() * 10),
+        neutral: 25,
+        negative: 10,
+        score: 0.55 + (Math.random() - 0.5) * 0.3 // -1 to 1 scale
+      },
+      
+      // Analyst data
+      analystRating: {
+        score: 4.2 + (Math.random() - 0.5) * 0.5,
+        count: 12 + Math.floor(Math.random() * 5),
+        breakdown: {
+          strongBuy: 5,
+          buy: 4,
+          hold: 2,
+          sell: 1,
+          strongSell: 0
+        }
+      },
+      
+      // Meme factor
+      memeFactor: {
+        score: 8.5 + (Math.random() - 0.5) * 2,
+        trending: true,
+        mentions24h: 1250 + Math.floor(Math.random() * 500),
+        momentum: Math.random() > 0.5 ? "🔥 Hot" : "📈 Rising"
+      },
+      
+      // Sentiment distribution for visualization
+      sentimentDistribution: [
+        { label: "Very Positive", value: 25 + Math.floor(Math.random() * 10) },
+        { label: "Positive", value: 40 + Math.floor(Math.random() * 10) },
+        { label: "Neutral", value: 25 },
+        { label: "Negative", value: 8 },
+        { label: "Very Negative", value: 2 }
+      ]
     };
 
     if (!searches || searches.length === 0) {
+      // Normalize sentiment distribution to add up to 100%
+      const total = stats.sentimentDistribution.reduce((sum: number, item: any) => sum + item.value, 0);
+      stats.sentimentDistribution = stats.sentimentDistribution.map((item: any) => ({
+        ...item,
+        value: Math.round((item.value / total) * 100)
+      }));
       return stats;
     }
 
@@ -122,6 +173,35 @@ export default defineEventHandler(async (event) => {
       stats.dateRange.last = dates[dates.length - 1]?.toISOString() || null;
     }
 
+    // Normalize sentiment distribution to add up to 100%
+    const total = stats.sentimentDistribution.reduce((sum: number, item: any) => sum + item.value, 0);
+    stats.sentimentDistribution = stats.sentimentDistribution.map((item: any) => ({
+      ...item,
+      value: Math.round((item.value / total) * 100)
+    }));
+    
+    // Ensure sentiment.positive matches the distribution
+    stats.sentiment.positive = stats.sentimentDistribution
+      .filter((item: any) => item.label.includes('Positive'))
+      .reduce((sum: number, item: any) => sum + item.value, 0);
+    stats.sentiment.neutral = stats.sentimentDistribution
+      .filter((item: any) => item.label === 'Neutral')
+      .reduce((sum: number, item: any) => sum + item.value, 0);
+    stats.sentiment.negative = stats.sentimentDistribution
+      .filter((item: any) => item.label.includes('Negative'))
+      .reduce((sum: number, item: any) => sum + item.value, 0);
+    
+    // Round analyst rating score to 1 decimal
+    stats.analystRating.score = Math.round(stats.analystRating.score * 10) / 10;
+    
+    // Round meme factor score to 1 decimal
+    stats.memeFactor.score = Math.round(stats.memeFactor.score * 10) / 10;
+    
+    // Round price to 2 decimals
+    stats.currentPrice = Math.round(stats.currentPrice * 100) / 100;
+    stats.priceChange = Math.round(stats.priceChange * 100) / 100;
+    stats.priceChangePercent = Math.round(stats.priceChangePercent * 100) / 100;
+    
     return stats;
   } catch (error) {
     console.error('Error calculating ticker statistics:', error);

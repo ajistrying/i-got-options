@@ -38,7 +38,7 @@
 
         <!-- Tabs for different views -->
         <UTabs :items="tabs" v-model="selectedTab">
-          <template #posts>
+          <template #reddit>
             <TickerWorkbenchPosts 
               :posts="allPosts"
               :subreddits="uniqueSubreddits"
@@ -46,40 +46,18 @@
             />
           </template>
 
-          <template #timeline>
-            <TickerWorkbenchTimeline 
-              :searches="searchHistory"
+          <template #news>
+            <TickerWorkbenchNews 
               :ticker="ticker"
+              :articles="newsArticles"
             />
           </template>
 
-          <template #raw>
-            <div class="bg-white dark:bg-gray-900 rounded-lg p-6">
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">Raw Data Export</h3>
-                <div class="space-x-2">
-                  <UButton 
-                    @click="exportJSON" 
-                    size="sm" 
-                    variant="soft"
-                    icon="i-heroicons-arrow-down-tray"
-                  >
-                    Export JSON
-                  </UButton>
-                  <UButton 
-                    @click="exportCSV" 
-                    size="sm" 
-                    variant="soft"
-                    icon="i-heroicons-arrow-down-tray"
-                  >
-                    Export CSV
-                  </UButton>
-                </div>
-              </div>
-              <div class="bg-gray-50 dark:bg-gray-800 rounded p-4 overflow-auto max-h-96">
-                <pre class="text-xs">{{ JSON.stringify(searchData, null, 2) }}</pre>
-              </div>
-            </div>
+          <template #earnings>
+            <TickerWorkbenchEarnings 
+              :ticker="ticker"
+              :earnings="earningsData"
+            />
           </template>
         </UTabs>
       </div>
@@ -99,19 +77,19 @@ const selectedTab = ref(0);
 
 const tabs = [
   {
-    key: 'posts',
+    slot: 'reddit',
     label: 'Reddit Posts',
     icon: 'i-heroicons-chat-bubble-left-right'
   },
   {
-    key: 'timeline',
-    label: 'Search Timeline',
-    icon: 'i-heroicons-clock'
+    slot: 'news',
+    label: 'News Articles',
+    icon: 'i-heroicons-newspaper'
   },
   {
-    key: 'raw',
-    label: 'Raw Data',
-    icon: 'i-heroicons-code-bracket'
+    slot: 'earnings',
+    label: 'Earnings Calls',
+    icon: 'i-heroicons-currency-dollar'
   }
 ];
 
@@ -157,25 +135,109 @@ const uniqueSubreddits = computed(() => {
   return Array.from(subreddits);
 });
 
-const searchHistory = computed(() => {
-  const grouped = {};
-  
-  searchData.value.forEach(search => {
-    const date = search.created_at;
-    if (!grouped[date]) {
-      grouped[date] = {
-        date,
-        subreddits: [],
-        totalPosts: 0
-      };
+// Dummy news articles data
+const newsArticles = computed(() => {
+  return [
+    {
+      id: 1,
+      headline: `${ticker.value} Surges on Better-Than-Expected Q4 Earnings`,
+      source: "Reuters",
+      date: "2 hours ago",
+      sentiment: "positive",
+      summary: "The company reported a 15% revenue growth year-over-year, beating analyst estimates by 8%. CEO highlighted strong performance in cloud services division.",
+      url: "#",
+      imageUrl: "https://via.placeholder.com/150"
+    },
+    {
+      id: 2,
+      headline: `Analysts Upgrade ${ticker.value} to 'Strong Buy' Following Product Launch`,
+      source: "Bloomberg",
+      date: "5 hours ago",
+      sentiment: "positive",
+      summary: "Goldman Sachs and Morgan Stanley both raised their price targets following the successful launch of the company's new AI-powered platform.",
+      url: "#"
+    },
+    {
+      id: 3,
+      headline: `${ticker.value} Faces Regulatory Scrutiny in European Markets`,
+      source: "Financial Times",
+      date: "1 day ago",
+      sentiment: "negative",
+      summary: "European regulators are examining the company's data practices, which could result in potential fines. The company states it is cooperating fully.",
+      url: "#"
+    },
+    {
+      id: 4,
+      headline: `Breaking: ${ticker.value} Announces $5B Share Buyback Program`,
+      source: "CNBC",
+      date: "2 days ago",
+      sentiment: "positive",
+      summary: "The board approved a new share repurchase program, signaling confidence in the company's long-term prospects.",
+      url: "#"
+    },
+    {
+      id: 5,
+      headline: `${ticker.value} Partners with Major Retailer for Distribution Deal`,
+      source: "Wall Street Journal",
+      date: "3 days ago",
+      sentiment: "neutral",
+      summary: "The strategic partnership is expected to expand market reach by 30% over the next two years.",
+      url: "#"
     }
-    grouped[date].subreddits.push(search.subreddit);
-    grouped[date].totalPosts += search.search_data?.length || 0;
-  });
-  
-  return Object.values(grouped).sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  ];
+});
+
+// Dummy earnings call data
+const earningsData = computed(() => {
+  return [
+    {
+      id: 1,
+      date: "Q4 2024",
+      callDate: "January 15, 2025",
+      eps: "$2.45",
+      epsEstimate: "$2.32",
+      revenue: "$15.2B",
+      revenueEstimate: "$14.8B",
+      sentiment: "bullish",
+      transcriptHighlights: [
+        "Revenue exceeded guidance by 8%, driven by strong performance in North American markets",
+        "Operating margin expanded 250 basis points year-over-year to 23.5%",
+        "Announcing expansion into Asian markets with $500M investment in Q1 2025",
+        "R&D investment increased by 20% to accelerate AI product development",
+        "Free cash flow reached record $4.2B, up 18% YoY"
+      ],
+      ceoQuotes: [
+        "We're extremely pleased with our performance this quarter, demonstrating the strength of our business model and the dedication of our team.",
+        "Looking ahead, we see significant opportunities for growth, particularly in AI and cloud services."
+      ],
+      guidanceNext: {
+        revenue: "$16.0B - $16.5B",
+        eps: "$2.50 - $2.65"
+      }
+    },
+    {
+      id: 2,
+      date: "Q3 2024",
+      callDate: "October 18, 2024",
+      eps: "$2.28",
+      epsEstimate: "$2.25",
+      revenue: "$14.1B",
+      revenueEstimate: "$14.0B",
+      sentiment: "neutral",
+      transcriptHighlights: [
+        "Sequential improvement in gross margins despite supply chain challenges",
+        "Customer acquisition costs decreased by 15%",
+        "Successfully launched three new products ahead of schedule"
+      ],
+      ceoQuotes: [
+        "We're navigating a challenging macro environment while continuing to invest in our future."
+      ],
+      guidanceNext: {
+        revenue: "$14.8B - $15.2B",
+        eps: "$2.30 - $2.35"
+      }
+    }
+  ];
 });
 
 const loadTickerData = async () => {
@@ -250,6 +312,27 @@ const exportCSV = () => {
   link.click();
   URL.revokeObjectURL(url);
 };
+
+const searchHistory = computed(() => {
+  const grouped = {};
+  
+  searchData.value.forEach(search => {
+    const date = search.created_at;
+    if (!grouped[date]) {
+      grouped[date] = {
+        date,
+        subreddits: [],
+        totalPosts: 0
+      };
+    }
+    grouped[date].subreddits.push(search.subreddit);
+    grouped[date].totalPosts += search.search_data?.length || 0;
+  });
+  
+  return Object.values(grouped).sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+});
 
 onMounted(() => {
   loadTickerData();
