@@ -25,7 +25,6 @@
         <!-- Search History Section -->
         <UCard class="shadow-lg">
           <SearchHistory 
-            @select-search="handleSelectSearch"
             ref="searchHistoryRef"
           />
         </UCard>
@@ -47,33 +46,4 @@ const handleSearchComplete = (results: any) => {
   }
 };
 
-const handleSelectSearch = async (search: any) => {
-  // Load the full search results for the selected search
-  try {
-    const { supabase } = useSupabase();
-    const { data } = await supabase
-      .from('ticker_searches')
-      .select('*')
-      .eq('ticker', search.ticker)
-      .eq('created_at', search.created_at)
-      .order('created_at', { ascending: false });
-    
-    if (data && data.length > 0) {
-      // Format the data to match the expected structure
-      const formattedResults = {
-        ticker: search.ticker,
-        timestamp: search.created_at,
-        results: data.map(item => ({
-          subreddit: item.subreddit,
-          count: item.search_data.length,
-          posts: item.search_data
-        })),
-        total_posts: data.reduce((sum, item) => sum + item.search_data.length, 0)
-      };
-      
-    }
-  } catch (error) {
-    console.error('Failed to load search details:', error);
-  }
-};
 </script>

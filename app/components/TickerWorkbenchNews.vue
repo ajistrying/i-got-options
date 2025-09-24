@@ -1,47 +1,7 @@
 <template>
   <div class="space-y-6">
-    <!-- Filter Bar -->
-    <div class="bg-white dark:bg-gray-900 rounded-lg p-4 shadow">
-      <div class="flex flex-wrap gap-4 items-center">
-        <!-- Sentiment Filter -->
-        <div class="flex-1 min-w-[200px]">
-          <label class="text-sm text-gray-600 dark:text-gray-400 mb-1 block">Filter by Sentiment</label>
-          <USelectMenu
-            v-model="selectedSentiment"
-            :options="sentimentOptions"
-            placeholder="All sentiments"
-            value-attribute="value"
-            option-attribute="label"
-          />
-        </div>
-
-        <!-- Source Filter -->
-        <div class="flex-1 min-w-[200px]">
-          <label class="text-sm text-gray-600 dark:text-gray-400 mb-1 block">News Source</label>
-          <USelectMenu
-            v-model="selectedSource"
-            :options="sourceOptions"
-            placeholder="All sources"
-            value-attribute="value"
-            option-attribute="label"
-          />
-        </div>
-
-        <!-- Sort By -->
-        <div class="flex-1 min-w-[200px]">
-          <label class="text-sm text-gray-600 dark:text-gray-400 mb-1 block">Sort by</label>
-          <USelectMenu
-            v-model="sortBy"
-            :options="sortOptions"
-            value-attribute="value"
-            option-attribute="label"
-          />
-        </div>
-      </div>
-    </div>
-
     <!-- News Articles List -->
-    <div v-if="filteredArticles.length === 0" class="text-center py-12">
+    <div v-if="articles.length === 0" class="text-center py-12">
       <UIcon name="i-heroicons-newspaper" class="text-5xl text-gray-400 mb-3" />
       <p class="text-gray-600 dark:text-gray-400">No news articles found</p>
     </div>
@@ -135,7 +95,7 @@
       <UPagination
         v-model="currentPage"
         :page-count="pageSize"
-        :total="filteredArticles.length"
+        :total="articles.length"
       />
     </div>
 
@@ -180,77 +140,19 @@ const props = defineProps<{
   articles: any[];
 }>();
 
-// Filters and Sorting
-const selectedSentiment = ref('all');
-const selectedSource = ref('all');
-const sortBy = ref('date');
+// Pagination
 const currentPage = ref(1);
 const pageSize = 5;
 
 // Bookmarked articles (stored locally)
 const bookmarkedArticles = ref(new Set<number>());
 
-const sentimentOptions = [
-  { label: 'All Sentiments', value: 'all' },
-  { label: 'Positive', value: 'positive' },
-  { label: 'Neutral', value: 'neutral' },
-  { label: 'Negative', value: 'negative' }
-];
-
-const sourceOptions = computed(() => {
-  const sources = new Set(props.articles.map(a => a.source));
-  return [
-    { label: 'All Sources', value: 'all' },
-    ...Array.from(sources).map(source => ({ label: source, value: source }))
-  ];
-});
-
-const sortOptions = [
-  { label: 'Most Recent', value: 'date' },
-  { label: 'Positive First', value: 'sentiment_positive' },
-  { label: 'Negative First', value: 'sentiment_negative' }
-];
-
-// Filtered articles based on selections
-const filteredArticles = computed(() => {
-  let filtered = [...props.articles];
-
-  // Filter by sentiment
-  if (selectedSentiment.value !== 'all') {
-    filtered = filtered.filter(article => article.sentiment === selectedSentiment.value);
-  }
-
-  // Filter by source
-  if (selectedSource.value !== 'all') {
-    filtered = filtered.filter(article => article.source === selectedSource.value);
-  }
-
-  // Sort articles
-  filtered.sort((a, b) => {
-    switch (sortBy.value) {
-      case 'date':
-        // Sort by recency (assuming date strings like "2 hours ago" are pre-sorted)
-        return props.articles.indexOf(a) - props.articles.indexOf(b);
-      case 'sentiment_positive':
-        const sentimentOrder = { positive: 0, neutral: 1, negative: 2 };
-        return sentimentOrder[a.sentiment] - sentimentOrder[b.sentiment];
-      case 'sentiment_negative':
-        const sentimentOrderReverse = { negative: 0, neutral: 1, positive: 2 };
-        return sentimentOrderReverse[a.sentiment] - sentimentOrderReverse[b.sentiment];
-      default:
-        return 0;
-    }
-  });
-
-  return filtered;
-});
-
-const totalPages = computed(() => Math.ceil(filteredArticles.value.length / pageSize));
+const totalPages = computed(() => Math.ceil(props.articles.length / pageSize));
 
 const paginatedArticles = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
   const end = start + pageSize;
-  return filteredArticles.value.slice(start, end);
+  return props.articles.slice(start, end);
 });
 
 // Sentiment counts
@@ -305,10 +207,6 @@ const shareArticle = (article: any) => {
   }
 };
 
-// Reset page when filters change
-watch([selectedSentiment, selectedSource, sortBy], () => {
-  currentPage.value = 1;
-});
 </script>
 
 <style scoped>

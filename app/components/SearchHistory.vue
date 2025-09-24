@@ -32,19 +32,9 @@
 			>
 				<!-- Main Row -->
 				<div
-					class="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-					@click="toggleExpanded(tickerGroup.ticker)"
+					class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
 				>
 					<div class="flex items-center space-x-4 flex-1">
-						<!-- Expand/Collapse Icon -->
-						<UIcon
-							:name="
-								isExpanded(tickerGroup.ticker)
-									? 'i-heroicons-chevron-down'
-									: 'i-heroicons-chevron-right'
-							"
-							class="w-4 h-4 text-gray-400 transition-transform"
-						/>
 
 						<!-- Ticker -->
 						<span class="font-bold text-primary-600 dark:text-primary-400 text-lg">
@@ -82,82 +72,11 @@
 						</UButton>
 						<UButton
 							size="xs"
-							variant="ghost"
-							@click.stop="$emit('select-search', tickerGroup.mostRecentSearch)"
-							class="text-gray-500 hover:text-primary-600"
-						>
-							View Latest Results
-						</UButton>
-						<UButton
-							size="xs"
 							color="red"
 							variant="ghost"
 							icon="i-heroicons-trash"
 							@click.stop="deleteAllSearchesForTicker(tickerGroup.ticker)"
 						/>
-					</div>
-				</div>
-
-				<!-- Expanded Content -->
-				<div
-					v-if="isExpanded(tickerGroup.ticker)"
-					class="border-t border-gray-200 dark:border-gray-700"
-				>
-					<div v-if="loadingDetails[tickerGroup.ticker]" class="flex justify-center py-8">
-						<UIcon name="i-heroicons-arrow-path" class="animate-spin text-xl" />
-					</div>
-
-					<div v-else-if="searchDetails[tickerGroup.ticker]" class="p-4 space-y-4">
-						<!-- Combined results from all searches for this ticker -->
-						<div
-							v-for="subredditResult in searchDetails[tickerGroup.ticker]
-								.combinedResults"
-							:key="subredditResult.subreddit"
-							class="border border-gray-200 dark:border-gray-700 rounded-lg"
-						>
-							<!-- Subreddit Header -->
-							<div
-								class="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700"
-							>
-								<div class="flex items-center justify-between">
-									<h4 class="font-medium">r/{{ subredditResult.subreddit }}</h4>
-									<UBadge size="xs" color="gray"
-										>{{ subredditResult.count }} posts</UBadge
-									>
-								</div>
-							</div>
-
-							<!-- Posts List -->
-							<div class="max-h-60 overflow-y-auto">
-								<div v-if="subredditResult.error" class="p-4 text-red-500 text-sm">
-									{{ subredditResult.error }}
-								</div>
-
-								<div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
-									<div
-										v-for="post in subredditResult.posts"
-										:key="post.id"
-										class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-									>
-										<div class="font-medium text-sm mb-1">{{ post.title }}</div>
-										<div
-											class="text-xs text-gray-500 flex items-center space-x-4"
-										>
-											<span>Score: {{ post.score }}</span>
-											<span>Comments: {{ post.num_comments }}</span>
-											<a
-												:href="post.permalink"
-												target="_blank"
-												class="text-blue-500 hover:underline"
-												@click.stop
-											>
-												View on Reddit
-											</a>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
 					</div>
 				</div>
 			</UCard>
@@ -184,10 +103,6 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const totalPages = ref(1);
 
-// Expanded rows tracking
-const expandedRows = ref(new Set());
-const searchDetails = ref({});
-const loadingDetails = ref({});
 
 // Group searches by ticker
 const groupedHistory = computed(() => {
@@ -270,72 +185,6 @@ const formatDate = (dateString: string) => {
 	)}, ${year} ${hour}:${minute}${dayPeriod} ${timeZone}`;
 };
 
-const isExpanded = (ticker: string) => {
-	return expandedRows.value.has(ticker);
-};
-
-const toggleExpanded = async (ticker: string) => {
-	if (expandedRows.value.has(ticker)) {
-		expandedRows.value.delete(ticker);
-	} else {
-		expandedRows.value.add(ticker);
-		await loadSearchDetails(ticker);
-	}
-};
-
-const loadSearchDetails = async (ticker: string) => {
-	if (searchDetails.value[ticker]) {
-		return; // Already loaded
-	}
-
-	loadingDetails.value[ticker] = true;
-
-	try {
-		const { supabase } = useSupabase();
-		const { data } = await supabase
-			.from("ticker_searches")
-			.select("*")
-			.eq("ticker", ticker)
-			.order("created_at", { ascending: false });
-
-		if (data && data.length > 0) {
-			// Combine all posts from all searches for this ticker, grouped by subreddit
-			const subredditMap = {};
-
-			data.forEach((item) => {
-				const subreddit = item.subreddit;
-				if (!subredditMap[subreddit]) {
-					subredditMap[subreddit] = {
-						subreddit,
-						posts: [],
-						count: 0,
-					};
-				}
-
-				// Add posts from this search, avoiding duplicates
-				const existingPostIds = new Set(subredditMap[subreddit].posts.map((p) => p.id));
-				const newPosts = item.search_data.filter((post) => !existingPostIds.has(post.id));
-
-				subredditMap[subreddit].posts.push(...newPosts);
-				subredditMap[subreddit].count = subredditMap[subreddit].posts.length;
-			});
-
-			// Sort posts by score descending within each subreddit
-			Object.values(subredditMap).forEach((subredditResult) => {
-				subredditResult.posts.sort((a, b) => (b.score || 0) - (a.score || 0));
-			});
-
-			searchDetails.value[ticker] = {
-				ticker,
-				combinedResults: Object.values(subredditMap),
-			};
-		}
-	} catch (error) {
-		console.error("Failed to load search details:", error);
-	} finally {
-		loadingDetails.value[ticker] = false;
-	}
-};
 
 const loadHistory = async () => {
 	loading.value = true;
