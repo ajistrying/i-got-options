@@ -42,7 +42,25 @@ export const useRedditSearch = () => {
       return [];
     }
 
-    return data;
+    // Process data to handle both old and new formats
+    return data.map(item => {
+      if (item.data_version === 2 && item.unified_search_data) {
+        // New unified format - flatten for compatibility
+        const results = [];
+        for (const [subreddit, data] of Object.entries(item.unified_search_data.subreddits)) {
+          if (data.posts && data.posts.length > 0) {
+            results.push({
+              ...item,
+              subreddit,
+              search_data: data.posts
+            });
+          }
+        }
+        return results;
+      }
+      // Old format - return as is
+      return item;
+    }).flat();
   };
 
   return {

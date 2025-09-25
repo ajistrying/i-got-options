@@ -33,6 +33,14 @@
                     <UIcon name="i-heroicons-clock" class="w-4 h-4" />
                     <span>{{ formatDate(post.created_utc) }}</span>
                   </span>
+                  <span v-if="post.sort_method" class="flex items-center space-x-1">
+                    <UIcon :name="post.sort_method === 'hot' ? 'i-heroicons-fire' : 'i-heroicons-sparkles'" 
+                           :class="post.sort_method === 'hot' ? 'text-orange-500' : 'text-blue-500'" 
+                           class="w-4 h-4" />
+                    <span :class="post.sort_method === 'hot' ? 'text-orange-500' : 'text-blue-500'">
+                      {{ post.sort_method }}
+                    </span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -53,6 +61,15 @@
                   <UIcon name="i-heroicons-chat-bubble-left" class="w-4 h-4 text-gray-500" />
                   <span class="text-sm">{{ post.num_comments }} comments</span>
                 </div>
+                <UButton
+                  v-if="post.comments && post.comments.length > 0"
+                  size="xs"
+                  variant="soft"
+                  @click="toggleComments(post.id)"
+                  :icon="expandedPosts[post.id] ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'"
+                >
+                  {{ expandedPosts[post.id] ? 'Hide' : 'Show' }} {{ post.comments.length }} Comments
+                </UButton>
               </div>
               <a 
                 :href="post.permalink"
@@ -63,6 +80,31 @@
                 <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4" />
               </a>
             </div>
+
+            <!-- Comments Section -->
+            <Transition name="slide-fade">
+              <div v-if="post.comments && post.comments.length > 0 && expandedPosts[post.id]" 
+                   class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <h4 class="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-300">Top Comments</h4>
+                <div class="space-y-3">
+                  <div v-for="comment in post.comments" 
+                       :key="comment.id" 
+                       class="pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      <span class="font-medium">u/{{ comment.author }}</span>
+                      <span>•</span>
+                      <span class="flex items-center space-x-1">
+                        <UIcon name="i-heroicons-arrow-up" class="w-3 h-3" />
+                        <span>{{ comment.score }}</span>
+                      </span>
+                      <span>•</span>
+                      <span>{{ formatDate(comment.created_utc) }}</span>
+                    </div>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-4">{{ comment.body }}</p>
+                  </div>
+                </div>
+              </div>
+            </Transition>
           </div>
         </UCard>
       </TransitionGroup>
@@ -88,10 +130,22 @@ const props = defineProps<{
 
 const currentPage = ref(1);
 const pageSize = 10;
+const expandedPosts = ref<Record<string, boolean>>({});
 
-// Simply sort posts by score by default
+// Sort posts prioritizing those with comments and score
 const sortedPosts = computed(() => {
-  return [...props.posts].sort((a, b) => (b.score || 0) - (a.score || 0));
+  return [...props.posts].sort((a, b) => {
+    // First prioritize posts with comments
+    const aHasComments = a.comments?.length > 0 ? 1 : 0;
+    const bHasComments = b.comments?.length > 0 ? 1 : 0;
+    
+    if (aHasComments !== bHasComments) {
+      return bHasComments - aHasComments;
+    }
+    
+    // Then sort by score
+    return (b.score || 0) - (a.score || 0);
+  });
 });
 
 const totalPages = computed(() => Math.ceil(sortedPosts.value.length / pageSize));
@@ -105,27 +159,28 @@ const paginatedPosts = computed(() => {
 const formatDate = (timestamp: number) => {
   const date = new Date(timestamp * 1000);
   const now = new Date();
-  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-  
-  if (diffInHours < 24) {
-    if (diffInHours < 1) {
-      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-      return `${diffInMinutes}m ago`;
-    }
-    return `${diffInHours}h ago`;
+  const diff = now.getTime() - date.getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    return `${days}d ago`;
+  } else if (hours > 0) {
+    return `${hours}h ago`;
   } else {
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 30) {
-      return `${diffInDays}d ago`;
-    } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-      });
-    }
+    const minutes = Math.floor(diff / (1000 * 60));
+    return `${minutes}m ago`;
   }
 };
+
+const toggleComments = (postId: string) => {
+  expandedPosts.value[postId] = !expandedPosts.value[postId];
+};
+
+// Reset page when posts change
+watch(() => props.posts, () => {
+  currentPage.value = 1;
+});
 </script>
 
 <style scoped>
@@ -133,9 +188,42 @@ const formatDate = (timestamp: number) => {
 .list-leave-active {
   transition: all 0.3s ease;
 }
+
 .list-enter-from,
 .list-leave-to {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateX(-30px);
+}
+
+.slide-fade-enter-active {
+  transition: all 0.3s ease;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.slide-fade-enter-from {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+
+.slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.line-clamp-4 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
 }
 </style>
