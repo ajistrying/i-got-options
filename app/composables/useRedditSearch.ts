@@ -3,7 +3,7 @@ export const useRedditSearch = () => {
   const error = ref(null);
   const searchResults = ref(null);
 
-  const searchTicker = async (ticker: string, subreddits: string[] = []) => {
+  const searchReddit = async (ticker: string, subreddits: string[] = []) => {
     loading.value = true;
     error.value = null;
     searchResults.value = null;
@@ -67,7 +67,7 @@ export const useRedditSearch = () => {
     loading: readonly(loading),
     error: readonly(error),
     searchResults: readonly(searchResults),
-    searchTicker,
+    searchReddit,
     getTickerHistory
   };
 };

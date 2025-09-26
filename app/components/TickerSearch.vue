@@ -105,7 +105,7 @@ const availableSubreddits = ref([]);
 const loadingSubreddits = ref(false);
 const showValidation = ref(false);
 
-const { loading, error, searchTicker } = useRedditSearch();
+const { loading, error, searchReddit } = useRedditSearch();
 
 const emit = defineEmits(['search-complete']);
 
@@ -149,7 +149,7 @@ const handleSearch = async () => {
   }
   
   try {
-    const results = await searchTicker(ticker.value, selectedSubreddits.value);
+    const results = await searchReddit(ticker.value, selectedSubreddits.value);
     emit('search-complete', results);
   } catch (err) {
     // Error is already handled in composable
