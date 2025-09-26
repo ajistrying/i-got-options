@@ -100,12 +100,15 @@
 
 <script setup lang="ts">
 const ticker = ref('');
+const isDataPipelineRunning = ref(false);
 const selectedSubreddits = ref<string[]>([]);
 const availableSubreddits = ref([]);
 const loadingSubreddits = ref(false);
 const showValidation = ref(false);
 
-const { loading, error, searchReddit } = useRedditSearch();
+const toast = useToast();
+
+const { loading, error, runPipeline } = useTickerDataPipeline();
 
 const emit = defineEmits(['search-complete']);
 
@@ -137,32 +140,33 @@ const removeSubreddit = (sub: string) => {
 
 const handleSearch = async () => {
   showValidation.value = false;
-  
+
   if (!ticker.value) {
     showValidation.value = true;
     return;
   }
-  
+
   if (selectedSubreddits.value.length === 0) {
     showValidation.value = true;
     return;
   }
-  
-  try {
-    const results = await searchReddit(ticker.value, selectedSubreddits.value);
-    emit('search-complete', results);
-  } catch (err) {
-    // Error is already handled in composable
-  }
-};
 
-const clearForm = () => {
-  ticker.value = '';
-  selectedSubreddits.value = [];
-  showValidation.value = false;
+  try {
+    isDataPipelineRunning.value = true;
+    const results = await runPipeline(ticker.value, selectedSubreddits.value);
+    emit('search-complete', results);
+    toast.add({ title: 'Search completed successfully', color: 'success' });
+  } catch (err) {
+    // Error is now properly displayed via the error ref from the composable
+    console.error('Search pipeline failed:', err);
+    toast.add({ title: 'Search failed. Error has been logged.', color: 'error' });
+  } finally {
+    isDataPipelineRunning.value = false;
+  }
 };
 
 onMounted(() => {
   loadSubreddits();
 });
+
 </script>

@@ -8,7 +8,8 @@ export default defineEventHandler(async (event) => {
     if (!ticker) {
         throw createError({
             statusCode: 400,
-            statusMessage: 'Ticker is required'
+            statusMessage: 'Ticker is required',
+            message: 'Ticker is required'
         });
     }
 
@@ -20,12 +21,13 @@ export default defineEventHandler(async (event) => {
 
     try {
         const tickerWithExchangeCode = ticker.toUpperCase().concat('.US');
-        const response = await fetch(`https://eodhd.com/api/fundamentals/${tickerWithExchangeCode}?api_token=${process.env.eodhdApiToken}&fmt=json`);
+        const response = await fetch(`https://eodhd.com/api/fundamentals/${tickerWithExchangeCode}?api_token=${process.env.EODHD_API_KEY}&fmt=json`);
 
         if(!response.ok) {
             throw createError({
                 statusCode: response.status,
-                statusMessage: response.statusText
+                statusMessage: `Error fetching fundamental data from EODHD`,
+                message: response.statusText
             });
         }
 
@@ -88,26 +90,6 @@ export default defineEventHandler(async (event) => {
             code: data.General?.Code || null,
             sector: data.General?.Sector || null,
             description: data.General?.Description || null,
-            highlights: {
-                marketCap: cleanFinancialValue(data.Highlights?.MarketCapitalization),
-                peRatio: cleanFinancialValue(data.Highlights?.PERatio),
-                pegRatio: cleanFinancialValue(data.Highlights?.PEGRatio),
-                wallStreetTargetPrice: cleanFinancialValue(data.Highlights?.WallStreetTargetPrice),
-                bookValue: cleanFinancialValue(data.Highlights?.BookValue),
-                dividendYield: cleanFinancialValue(data.Highlights?.DividendYield),
-                earningsShare: cleanFinancialValue(data.Highlights?.EarningsShare),
-                epsEstimateCurrentYear: cleanFinancialValue(data.Highlights?.EPSEstimateCurrentYear),
-                epsEstimateNextYear: cleanFinancialValue(data.Highlights?.EPSEstimateNextYear),
-                profitMargin: cleanFinancialValue(data.Highlights?.ProfitMargin),
-                operatingMarginTTM: cleanFinancialValue(data.Highlights?.OperatingMarginTTM),
-                returnOnAssetsTTM: cleanFinancialValue(data.Highlights?.ReturnOnAssetsTTM),
-                returnOnEquityTTM: cleanFinancialValue(data.Highlights?.ReturnOnEquityTTM),
-                revenueTTM: cleanFinancialValue(data.Highlights?.RevenueTTM),
-                revenuePerShareTTM: cleanFinancialValue(data.Highlights?.RevenuePerShareTTM),
-                quarterlyRevenueGrowthYOY: cleanFinancialValue(data.Highlights?.QuarterlyRevenueGrowthYOY),
-                quarterlyEarningsGrowthYOY: cleanFinancialValue(data.Highlights?.QuarterlyEarningsGrowthYOY),
-                grossProfitTTM: cleanFinancialValue(data.Highlights?.GrossProfitTTM)
-            },
             financials: {
                 balanceSheet: {
                     quarterly: filterPast5YearsToArray(data.Financials?.Balance_Sheet?.quarterly),
@@ -121,21 +103,68 @@ export default defineEventHandler(async (event) => {
                     quarterly: filterPast5YearsToArray(data.Financials?.Income_Statement?.quarterly),
                     yearly: filterPast5YearsToArray(data.Financials?.Income_Statement?.yearly)
                 }
-            },
-            valuation: data.Valuation || null,
-            analystRatings: data.AnalystRatings || null
+            }
         };
 
-        // Store data in database if needed
-        // const { error } = await supabase
+        // Store or update fundamental data in the database
+        // First, check if a record exists for this ticker
+        const { data: existingRecord, error: fetchError } = await supabase
+            .from('ticker_searches')
+            .select('id')
+            .eq('ticker', ticker.toUpperCase())
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
 
-        return extractedData;
+        if (existingRecord) {
+            // Update existing record with fundamental data
+            const { error: updateError } = await supabase
+                .from('ticker_searches')
+                .update({
+                    fundamental_data: extractedData,
+                    fundamental_data_updated_at: new Date().toISOString()
+                })
+                .eq('id', existingRecord.id);
 
-    } catch (error) {
+            if (updateError) {
+                throw createError({
+                    statusCode: 500,
+                    statusMessage: `Error updating ticker search record`,
+                    message: updateError.message
+                });
+            }
+        } else {
+            // Create new record with fundamental data
+            const { error: insertError } = await supabase
+                .from('ticker_searches')
+                .insert({
+                    ticker: ticker.toUpperCase(),
+                    fundamental_data: extractedData,
+                    fundamental_data_updated_at: new Date().toISOString(),
+                    data_version: 2 // Using new unified format
+                });
+
+            if (insertError) {
+                throw createError({
+                    statusCode: 500,
+                    statusMessage: `Error inserting ticker search record`,
+                    message: insertError.message
+                });
+            }
+        }
+
+        return {
+            success: true,
+            message: `Fundamental data for ${ticker.toUpperCase()} fetched and stored successfully`,
+            ticker: ticker.toUpperCase()
+        };
+
+    } catch (error: any) {
         console.error('Error fetching fundamental data:', error);
         throw createError({
             statusCode: 500,
-            statusMessage: 'Internal Server Error'
+            statusMessage: `Internal Server Error`,
+            message: error.message || 'Internal Server Error'
         });
     }
 });

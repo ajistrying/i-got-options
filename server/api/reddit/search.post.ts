@@ -155,22 +155,59 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Store unified search results in database
-    const { error: dbError } = await supabase
+    // Check if a record exists for this ticker (may have been created by fundamentalData endpoint)
+    const { data: existingRecord, error: fetchError } = await supabase
       .from('ticker_searches')
-      .insert({
-        ticker: ticker.toUpperCase(),
-        unified_search_data: unifiedSearchData,
-        search_metadata: searchMetadata,
-        search_query: ticker,
-        data_version: 2, // Mark as new unified format
-        // Keep backward compatibility fields null
-        subreddit: null,
-        search_data: null
-      });
+      .select('id, unified_search_data, search_metadata')
+      .eq('ticker', ticker.toUpperCase())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
 
-    if (dbError) {
-      console.error('Error storing unified search data:', dbError);
+    if (existingRecord) {
+      // Merge new Reddit search data with existing record
+      const mergedSearchData = {
+        ...existingRecord.unified_search_data,
+        ...unifiedSearchData
+      };
+
+      const mergedMetadata = {
+        ...existingRecord.search_metadata,
+        ...searchMetadata
+      };
+
+      // Update existing record with Reddit search data
+      const { error: updateError } = await supabase
+        .from('ticker_searches')
+        .update({
+          unified_search_data: mergedSearchData,
+          search_metadata: mergedMetadata,
+          search_query: ticker,
+          data_version: 2 // Ensure it's marked as new unified format
+        })
+        .eq('id', existingRecord.id);
+
+      if (updateError) {
+        console.error('Error updating unified search data:', updateError);
+      }
+    } else {
+      // Create new record with Reddit search data
+      const { error: insertError } = await supabase
+        .from('ticker_searches')
+        .insert({
+          ticker: ticker.toUpperCase(),
+          unified_search_data: unifiedSearchData,
+          search_metadata: searchMetadata,
+          search_query: ticker,
+          data_version: 2, // Mark as new unified format
+          // Keep backward compatibility fields null
+          subreddit: null,
+          search_data: null
+        });
+
+      if (insertError) {
+        console.error('Error inserting unified search data:', insertError);
+      }
     }
 
     // Return response in a format compatible with existing frontend
@@ -182,6 +219,7 @@ export default defineEventHandler(async (event) => {
     }));
 
     return {
+      success: true,
       ticker: ticker.toUpperCase(),
       timestamp: searchMetadata.search_timestamp,
       results: formattedResults,
