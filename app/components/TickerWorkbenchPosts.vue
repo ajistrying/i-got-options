@@ -113,9 +113,9 @@
     <!-- Pagination -->
     <div v-if="totalPages > 1" class="flex justify-center mt-6">
       <UPagination
-        v-model="currentPage"
-        :page-count="pageSize"
+        v-model:page="currentPage"
         :total="sortedPosts.length"
+        :items-per-page="pageSize"
       />
     </div>
   </div>
@@ -138,11 +138,11 @@ const sortedPosts = computed(() => {
     // First prioritize posts with comments
     const aHasComments = a.comments?.length > 0 ? 1 : 0;
     const bHasComments = b.comments?.length > 0 ? 1 : 0;
-    
+
     if (aHasComments !== bHasComments) {
       return bHasComments - aHasComments;
     }
-    
+
     // Then sort by score
     return (b.score || 0) - (a.score || 0);
   });

@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   );
 
   try {
-    // Fetch all searches for this ticker
+    // Fetch all searches for this ticker, prioritizing unified data format (version 2)
     const { data: searches, error } = await supabase
       .from('ticker_searches')
       .select('*')
@@ -31,10 +31,26 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // Process searches to extract unified data where available
+    const processedSearches = searches?.map(search => {
+      // If this is new unified format (version 2), return it as is
+      if (search.data_version === 2 && search.unified_search_data) {
+        return {
+          ...search,
+          // Ensure unified_search_data is available at the top level
+          unified_search_data: search.unified_search_data,
+          search_metadata: search.search_metadata
+        };
+      }
+
+      // For legacy format, maintain backward compatibility
+      return search;
+    }) || [];
+
     return {
       ticker,
-      searches: searches || [],
-      totalSearches: searches?.length || 0
+      searches: processedSearches,
+      totalSearches: processedSearches?.length || 0
     };
   } catch (error) {
     console.error('Error fetching ticker data:', error);
