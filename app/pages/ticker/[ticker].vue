@@ -2,8 +2,8 @@
   <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
     <div class="container mx-auto px-4 sm:px-6 py-8 max-w-7xl">
       <!-- Header -->
-      <TickerWorkbenchHeader 
-        :ticker="ticker" 
+      <TickerWorkbenchHeader
+        :ticker="ticker"
         :lastSearchTime="lastSearchTime"
         :totalSearches="totalSearches"
         @refresh="handleRefresh"
@@ -59,6 +59,12 @@
               :earnings="earningsData"
             />
           </template>
+
+          <template #fundamentals>
+            <TickerWorkbenchFundamentals
+              :ticker="ticker"
+            />
+          </template>
         </UTabs>
       </div>
     </div>
@@ -94,6 +100,12 @@ const tabs = [
     label: 'Earnings Calls',
     icon: 'i-heroicons-currency-dollar',
     value: 'earnings'
+  },
+  {
+    slot: 'fundamentals',
+    label: 'Fundamentals',
+    icon: 'i-heroicons-chart-bar',
+    value: 'fundamentals'
   }
 ];
 
