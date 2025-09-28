@@ -2,8 +2,8 @@
   <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
     <div class="container mx-auto px-4 sm:px-6 py-8 max-w-7xl">
       <!-- Header -->
-      <TickerWorkbenchHeader 
-        :ticker="ticker" 
+      <TickerWorkbenchHeader
+        :ticker="ticker"
         :lastSearchTime="lastSearchTime"
         :totalSearches="totalSearches"
         @refresh="handleRefresh"
@@ -37,9 +37,9 @@
         />
 
         <!-- Tabs for different views -->
-        <UTabs :items="tabs" v-model="selectedTab">
+        <UTabs :items="tabs" v-model="selectedTab" :default-value="'reddit'">
           <template #reddit>
-            <TickerWorkbenchPosts 
+            <TickerWorkbenchPosts
               :posts="allPosts"
               :subreddits="uniqueSubreddits"
               :ticker="ticker"
@@ -47,16 +47,22 @@
           </template>
 
           <template #news>
-            <TickerWorkbenchNews 
+            <TickerWorkbenchNews
               :ticker="ticker"
               :articles="newsArticles"
             />
           </template>
 
           <template #earnings>
-            <TickerWorkbenchEarnings 
+            <TickerWorkbenchEarnings
               :ticker="ticker"
               :earnings="earningsData"
+            />
+          </template>
+
+          <template #fundamentals>
+            <TickerWorkbenchFundamentals
+              :ticker="ticker"
             />
           </template>
         </UTabs>
@@ -71,25 +77,35 @@ const router = useRouter();
 const ticker = computed(() => (route.params.ticker as string).toUpperCase());
 
 const loading = ref(true);
-const searchData = ref([]);
-const statistics = ref({});
-const selectedTab = ref(0);
+const searchData = ref<any[]>([]);
+const statistics = ref<any>({});
+const searchMetadata = ref<any>({});
+const selectedTab = ref('reddit'); // Use value instead of index
 
 const tabs = [
   {
     slot: 'reddit',
     label: 'Reddit Posts',
-    icon: 'i-heroicons-chat-bubble-left-right'
+    icon: 'i-heroicons-chat-bubble-left-right',
+    value: 'reddit'
   },
   {
     slot: 'news',
     label: 'News Articles',
-    icon: 'i-heroicons-newspaper'
+    icon: 'i-heroicons-newspaper',
+    value: 'news'
   },
   {
     slot: 'earnings',
     label: 'Earnings Calls',
-    icon: 'i-heroicons-currency-dollar'
+    icon: 'i-heroicons-currency-dollar',
+    value: 'earnings'
+  },
+  {
+    slot: 'fundamentals',
+    label: 'Fundamentals',
+    icon: 'i-heroicons-chart-bar',
+    value: 'fundamentals'
   }
 ];
 
@@ -111,27 +127,67 @@ const totalSearches = computed(() => {
 const allPosts = computed(() => {
   const posts = [];
   const seenIds = new Set();
-  
+
   searchData.value.forEach(search => {
-    if (search.search_data && Array.isArray(search.search_data)) {
+    // Handle new unified data format
+    if (search.unified_search_data && search.data_version === 2) {
+      const unifiedData = search.unified_search_data;
+
+      // Iterate through all subreddits in the unified data
+      Object.entries(unifiedData.subreddits || {}).forEach(([subredditName, subredditData]) => {
+        // Add posts from this subreddit
+        if (subredditData.posts && Array.isArray(subredditData.posts)) {
+          subredditData.posts.forEach(post => {
+            if (!seenIds.has(post.id)) {
+              seenIds.add(post.id);
+              posts.push({
+                ...post,
+                search_date: search.created_at,
+                search_subreddit: subredditName,
+                // Include comments if available
+                comments: post.comments || []
+              });
+            }
+          });
+        }
+      });
+    }
+    // Handle legacy format for backward compatibility
+    else if (search.search_data && Array.isArray(search.search_data)) {
       search.search_data.forEach(post => {
         if (!seenIds.has(post.id)) {
           seenIds.add(post.id);
           posts.push({
             ...post,
             search_date: search.created_at,
-            search_subreddit: search.subreddit
+            search_subreddit: search.subreddit,
+            comments: []
           });
         }
       });
     }
   });
-  
-  return posts.sort((a, b) => (b.score || 0) - (a.score || 0));
+  return posts;
 });
 
 const uniqueSubreddits = computed(() => {
-  const subreddits = new Set(searchData.value.map(s => s.subreddit));
+  const subreddits = new Set();
+
+  searchData.value.forEach(search => {
+    // Handle new unified data format
+    if (search.unified_search_data && search.data_version === 2) {
+      const unifiedData = search.unified_search_data;
+      // Get all subreddit names from the unified data
+      Object.keys(unifiedData.subreddits || {}).forEach(subreddit => {
+        subreddits.add(subreddit);
+      });
+    }
+    // Handle legacy format
+    else if (search.subreddit) {
+      subreddits.add(search.subreddit);
+    }
+  });
+
   return Array.from(subreddits);
 });
 
@@ -245,7 +301,13 @@ const loadTickerData = async () => {
   try {
     const data = await $fetch(`/api/ticker/${ticker.value}/data`);
     searchData.value = data.searches || [];
-    
+
+    // Extract metadata from the most recent unified search
+    const mostRecentUnified = searchData.value.find(s => s.data_version === 2 && s.search_metadata);
+    if (mostRecentUnified && mostRecentUnified.search_metadata) {
+      searchMetadata.value = mostRecentUnified.search_metadata;
+    }
+
     // Load statistics
     const stats = await $fetch(`/api/ticker/${ticker.value}/stats`);
     statistics.value = stats;
@@ -253,6 +315,7 @@ const loadTickerData = async () => {
     console.error('Failed to load ticker data:', error);
     searchData.value = [];
     statistics.value = {};
+    searchMetadata.value = {};
   } finally {
     loading.value = false;
   }
@@ -269,73 +332,9 @@ const navigateToSearch = () => {
   navigateTo('/');
 };
 
-const exportJSON = () => {
-  const dataStr = JSON.stringify({
-    ticker: ticker.value,
-    exportDate: new Date().toISOString(),
-    searches: searchData.value,
-    statistics: statistics.value
-  }, null, 2);
-  
-  const blob = new Blob([dataStr], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${ticker.value}_workbench_${new Date().toISOString().split('T')[0]}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-};
-
-const exportCSV = () => {
-  const csvData = [];
-  csvData.push(['Ticker', 'Subreddit', 'Post Title', 'Score', 'Comments', 'Author', 'Date', 'URL']);
-  
-  allPosts.value.forEach(post => {
-    csvData.push([
-      ticker.value,
-      post.subreddit,
-      `"${post.title.replace(/"/g, '""')}"`,
-      post.score,
-      post.num_comments,
-      post.author,
-      new Date(post.created_utc * 1000).toISOString(),
-      post.permalink
-    ]);
-  });
-  
-  const csvContent = csvData.map(row => row.join(',')).join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${ticker.value}_posts_${new Date().toISOString().split('T')[0]}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-};
-
-const searchHistory = computed(() => {
-  const grouped = {};
-  
-  searchData.value.forEach(search => {
-    const date = search.created_at;
-    if (!grouped[date]) {
-      grouped[date] = {
-        date,
-        subreddits: [],
-        totalPosts: 0
-      };
-    }
-    grouped[date].subreddits.push(search.subreddit);
-    grouped[date].totalPosts += search.search_data?.length || 0;
-  });
-  
-  return Object.values(grouped).sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
-});
-
-onMounted(() => {
-  loadTickerData();
+onMounted(async () => {
+  await loadTickerData();
+  // Reddit tab is now selected by default via default-value prop
 });
 
 watch(() => route.params.ticker, () => {

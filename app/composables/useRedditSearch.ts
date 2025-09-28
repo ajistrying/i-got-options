@@ -1,13 +1,6 @@
 export const useRedditSearch = () => {
-  const loading = ref(false);
-  const error = ref(null);
-  const searchResults = ref(null);
-
-  const searchTicker = async (ticker: string, subreddits: string[] = []) => {
-    loading.value = true;
-    error.value = null;
-    searchResults.value = null;
-
+  // Simplified - just handle the API call and let the pipeline manage state
+  const searchReddit = async (ticker: string, subreddits: string[] = []) => {
     try {
       const data = await $fetch('/api/reddit/search', {
         method: 'POST',
@@ -16,15 +9,12 @@ export const useRedditSearch = () => {
           subreddits
         }
       });
-      
-      searchResults.value = data;
+
       return data;
     } catch (err) {
-      console.error('Search error:', err);
-      error.value = err.message || 'Failed to search Reddit';
+      console.error('Reddit search error:', err);
+      // Re-throw to let the pipeline handle it
       throw err;
-    } finally {
-      loading.value = false;
     }
   };
 
@@ -39,7 +29,6 @@ export const useRedditSearch = () => {
 
     if (dbError) {
       console.error('Error fetching history:', dbError);
-      return [];
     }
 
     // Process data to handle both old and new formats
@@ -64,10 +53,7 @@ export const useRedditSearch = () => {
   };
 
   return {
-    loading: readonly(loading),
-    error: readonly(error),
-    searchResults: readonly(searchResults),
-    searchTicker,
+    searchReddit,
     getTickerHistory
   };
 };
