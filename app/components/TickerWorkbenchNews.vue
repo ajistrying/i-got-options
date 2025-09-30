@@ -113,9 +113,9 @@
     <!-- Pagination -->
     <div v-if="totalPages > 1" class="flex justify-center mt-6">
       <UPagination
-        v-model="currentPage"
-        :page-count="pageSize"
+        v-model:page="currentPage"
         :total="articles.length"
+        :items-per-page="pageSize"
       />
     </div>
 

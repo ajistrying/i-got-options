@@ -37,23 +37,17 @@
         />
 
         <!-- Tabs for different views -->
-        <UTabs :items="tabs" v-model="selectedTab" :default-value="'reddit'">
-          <template #reddit>
-            <TickerWorkbenchPosts
+        <UTabs :items="tabs" v-model="selectedTab" :default-value="'media'">
+          <template #media>
+            <TickerWorkbenchMedia
               :posts="allPosts"
+              :articles="newsArticles || []"
               :subreddits="uniqueSubreddits"
               :ticker="ticker"
-              :loading="loadingReddit"
-              @refresh="refreshRedditPosts"
-            />
-          </template>
-
-          <template #news>
-            <TickerWorkbenchNews
-              :ticker="ticker"
-              :articles="newsArticles || []"
-              :loading="loadingNews"
-              @refresh="refreshNewsData"
+              :loading-reddit="loadingReddit"
+              :loading-news="loadingNews"
+              @refresh-reddit="refreshRedditPosts"
+              @refresh-news="refreshNewsData"
             />
           </template>
 
@@ -91,20 +85,14 @@ const loadingEarnings = ref(false);
 const searchData = ref<any[]>([]);
 const statistics = ref<any>({});
 const searchMetadata = ref<any>({});
-const selectedTab = ref('reddit'); // Use value instead of index
+const selectedTab = ref('media'); // Use value instead of index
 
 const tabs = [
   {
-    slot: 'reddit',
-    label: 'Reddit Posts',
-    icon: 'i-heroicons-chat-bubble-left-right',
-    value: 'reddit'
-  },
-  {
-    slot: 'news',
-    label: 'News Articles',
-    icon: 'i-heroicons-newspaper',
-    value: 'news'
+    slot: 'media',
+    label: 'Media & Social',
+    icon: 'i-heroicons-squares-2x2',
+    value: 'media'
   },
   {
     slot: 'earnings',
