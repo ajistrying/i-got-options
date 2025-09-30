@@ -1,7 +1,27 @@
 <template>
   <div class="space-y-6">
+    <!-- Header with Refresh Button -->
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Reddit Posts</h2>
+      <UButton
+        @click="$emit('refresh')"
+        variant="soft"
+        icon="i-heroicons-arrow-path"
+        size="sm"
+        :loading="loading"
+      >
+        Refresh Posts
+      </UButton>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-16">
+      <UIcon name="i-heroicons-arrow-path" class="animate-spin text-4xl text-primary-600 mb-4" />
+      <p class="text-gray-600 dark:text-gray-400">Refreshing Reddit posts...</p>
+    </div>
+
     <!-- Posts List -->
-    <div v-if="posts.length === 0" class="text-center py-12">
+    <div v-else-if="posts.length === 0" class="text-center py-12">
       <UIcon name="i-heroicons-document-magnifying-glass" class="text-5xl text-gray-400 mb-3" />
       <p class="text-gray-600 dark:text-gray-400">No Reddit posts found for this ticker</p>
     </div>
@@ -126,7 +146,10 @@ const props = defineProps<{
   posts: any[];
   subreddits: string[];
   ticker: string;
+  loading?: boolean;
 }>();
+
+defineEmits(['refresh']);
 
 const currentPage = ref(1);
 const pageSize = 10;
