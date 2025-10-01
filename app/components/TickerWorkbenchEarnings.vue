@@ -1,5 +1,27 @@
 <template>
   <div class="space-y-6">
+    <!-- Header with Refresh Button -->
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Earnings Calls</h2>
+      <UButton
+        @click="$emit('refresh')"
+        variant="soft"
+        icon="i-heroicons-arrow-path"
+        size="sm"
+        :loading="loading"
+      >
+        Refresh Earnings
+      </UButton>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-16">
+      <UIcon name="i-heroicons-arrow-path" class="animate-spin text-4xl text-primary-600 mb-4" />
+      <p class="text-gray-600 dark:text-gray-400">Refreshing earnings data...</p>
+    </div>
+
+    <!-- Earnings Overview -->
+    <div v-else class="space-y-6">
     <!-- Earnings Overview -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <UCard class="text-center">
@@ -215,6 +237,7 @@
         </div>
       </div>
     </UCard>
+    </div>
   </div>
 </template>
 
@@ -222,7 +245,10 @@
 const props = defineProps<{
   ticker: string;
   earnings: any[];
+  loading?: boolean;
 }>();
+
+defineEmits(['refresh']);
 
 // Get latest earnings
 const latestEarnings = computed(() => {

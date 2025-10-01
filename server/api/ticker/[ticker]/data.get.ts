@@ -47,10 +47,43 @@ export default defineEventHandler(async (event) => {
       return search;
     }) || [];
 
+    // Extract individual timestamps for each data source
+    let redditSearchTime = null;
+    let newsDataTime = null;
+    let fundamentalsDataTime = null;
+
+    // Find the most recent timestamps for each data source
+    for (const search of processedSearches) {
+      // Reddit search timestamp from search_metadata
+      if (!redditSearchTime && search.search_metadata?.search_timestamp) {
+        redditSearchTime = search.search_metadata.search_timestamp;
+      }
+
+      // News data timestamp
+      if (!newsDataTime && search.news_data_updated_at) {
+        newsDataTime = search.news_data_updated_at;
+      }
+
+      // Fundamentals data timestamp
+      if (!fundamentalsDataTime && search.fundamental_data_updated_at) {
+        fundamentalsDataTime = search.fundamental_data_updated_at;
+      }
+
+      // Stop searching if we've found all timestamps
+      if (redditSearchTime && newsDataTime && fundamentalsDataTime) {
+        break;
+      }
+    }
+
     return {
       ticker,
       searches: processedSearches,
-      totalSearches: processedSearches?.length || 0
+      totalSearches: processedSearches?.length || 0,
+      timestamps: {
+        reddit: redditSearchTime,
+        news: newsDataTime,
+        fundamentals: fundamentalsDataTime
+      }
     };
   } catch (error) {
     console.error('Error fetching ticker data:', error);

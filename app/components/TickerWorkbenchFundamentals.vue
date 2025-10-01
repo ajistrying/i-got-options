@@ -1,26 +1,37 @@
 <template>
   <div class="space-y-8">
-    <!-- Header with Period Selector -->
+    <!-- Header with Period Selector and Refresh Button -->
     <div class="flex items-center justify-between">
       <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
         Fundamental Data
       </h2>
-      <UButtonGroup>
+      <div class="flex items-center space-x-3">
+        <UButtonGroup>
+          <UButton
+            :variant="selectedPeriod === 'yearly' ? 'solid' : 'outline'"
+            @click="selectedPeriod = 'yearly'"
+            size="sm"
+          >
+            Yearly
+          </UButton>
+          <UButton
+            :variant="selectedPeriod === 'quarterly' ? 'solid' : 'outline'"
+            @click="selectedPeriod = 'quarterly'"
+            size="sm"
+          >
+            Quarterly
+          </UButton>
+        </UButtonGroup>
         <UButton
-          :variant="selectedPeriod === 'yearly' ? 'solid' : 'outline'"
-          @click="selectedPeriod = 'yearly'"
+          @click="handleRefresh"
+          variant="soft"
+          icon="i-heroicons-arrow-path"
           size="sm"
+          :loading="loading"
         >
-          Yearly
+          Refresh Data
         </UButton>
-        <UButton
-          :variant="selectedPeriod === 'quarterly' ? 'solid' : 'outline'"
-          @click="selectedPeriod = 'quarterly'"
-          size="sm"
-        >
-          Quarterly
-        </UButton>
-      </UButtonGroup>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -200,9 +211,15 @@ const props = defineProps<{
   ticker: string;
 }>();
 
+const emit = defineEmits(['refresh']);
+
 const loading = ref(false);
 const fundamentalData = ref<any>(null);
 const selectedPeriod = ref<'yearly' | 'quarterly'>('yearly');
+
+const handleRefresh = () => {
+  emit('refresh');
+};
 
 const hasData = computed(() => {
   return fundamentalData.value && fundamentalData.value.financials;

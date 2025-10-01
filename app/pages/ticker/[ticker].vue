@@ -6,6 +6,9 @@
         :ticker="ticker"
         :lastSearchTime="lastSearchTime"
         :totalSearches="totalSearches"
+        :redditSearchTime="redditSearchTime"
+        :newsDataTime="newsDataTime"
+        :fundamentalsDataTime="fundamentalsDataTime"
         @refresh="handleRefresh"
       />
 
@@ -37,19 +40,17 @@
         />
 
         <!-- Tabs for different views -->
-        <UTabs :items="tabs" v-model="selectedTab" :default-value="'reddit'">
-          <template #reddit>
-            <TickerWorkbenchPosts
+        <UTabs :items="tabs" v-model="selectedTab" :default-value="'media'">
+          <template #media>
+            <TickerWorkbenchMedia
               :posts="allPosts"
+              :articles="newsArticles || []"
               :subreddits="uniqueSubreddits"
               :ticker="ticker"
-            />
-          </template>
-
-          <template #news>
-            <TickerWorkbenchNews
-              :ticker="ticker"
-              :articles="newsArticles"
+              :loading-reddit="loadingReddit"
+              :loading-news="loadingNews"
+              @refresh-reddit="refreshRedditPosts"
+              @refresh-news="refreshNewsData"
             />
           </template>
 
@@ -57,12 +58,15 @@
             <TickerWorkbenchEarnings
               :ticker="ticker"
               :earnings="earningsData"
+              :loading="loadingEarnings"
+              @refresh="refreshEarnings"
             />
           </template>
 
           <template #fundamentals>
             <TickerWorkbenchFundamentals
               :ticker="ticker"
+              @refresh="refreshFundamentals"
             />
           </template>
         </UTabs>
@@ -77,23 +81,22 @@ const router = useRouter();
 const ticker = computed(() => (route.params.ticker as string).toUpperCase());
 
 const loading = ref(true);
+const loadingReddit = ref(false);
+const loadingNews = ref(false);
+const loadingFundamentals = ref(false);
+const loadingEarnings = ref(false);
 const searchData = ref<any[]>([]);
 const statistics = ref<any>({});
 const searchMetadata = ref<any>({});
-const selectedTab = ref('reddit'); // Use value instead of index
+const dataSourceTimestamps = ref<any>({});
+const selectedTab = ref('media'); // Use value instead of index
 
 const tabs = [
   {
-    slot: 'reddit',
-    label: 'Reddit Posts',
-    icon: 'i-heroicons-chat-bubble-left-right',
-    value: 'reddit'
-  },
-  {
-    slot: 'news',
-    label: 'News Articles',
-    icon: 'i-heroicons-newspaper',
-    value: 'news'
+    slot: 'media',
+    label: 'Media & Social',
+    icon: 'i-heroicons-squares-2x2',
+    value: 'media'
   },
   {
     slot: 'earnings',
@@ -123,6 +126,10 @@ const totalSearches = computed(() => {
   const uniqueDates = new Set(searchData.value.map(s => s.created_at));
   return uniqueDates.size;
 });
+
+const redditSearchTime = computed(() => dataSourceTimestamps.value?.reddit || null);
+const newsDataTime = computed(() => dataSourceTimestamps.value?.news || null);
+const fundamentalsDataTime = computed(() => dataSourceTimestamps.value?.fundamentals || null);
 
 const allPosts = computed(() => {
   const posts = [];
@@ -191,57 +198,8 @@ const uniqueSubreddits = computed(() => {
   return Array.from(subreddits);
 });
 
-// Dummy news articles data
-const newsArticles = computed(() => {
-  return [
-    {
-      id: 1,
-      headline: `${ticker.value} Surges on Better-Than-Expected Q4 Earnings`,
-      source: "Reuters",
-      date: "2 hours ago",
-      sentiment: "positive",
-      summary: "The company reported a 15% revenue growth year-over-year, beating analyst estimates by 8%. CEO highlighted strong performance in cloud services division.",
-      url: "#",
-      imageUrl: "https://via.placeholder.com/150"
-    },
-    {
-      id: 2,
-      headline: `Analysts Upgrade ${ticker.value} to 'Strong Buy' Following Product Launch`,
-      source: "Bloomberg",
-      date: "5 hours ago",
-      sentiment: "positive",
-      summary: "Goldman Sachs and Morgan Stanley both raised their price targets following the successful launch of the company's new AI-powered platform.",
-      url: "#"
-    },
-    {
-      id: 3,
-      headline: `${ticker.value} Faces Regulatory Scrutiny in European Markets`,
-      source: "Financial Times",
-      date: "1 day ago",
-      sentiment: "negative",
-      summary: "European regulators are examining the company's data practices, which could result in potential fines. The company states it is cooperating fully.",
-      url: "#"
-    },
-    {
-      id: 4,
-      headline: `Breaking: ${ticker.value} Announces $5B Share Buyback Program`,
-      source: "CNBC",
-      date: "2 days ago",
-      sentiment: "positive",
-      summary: "The board approved a new share repurchase program, signaling confidence in the company's long-term prospects.",
-      url: "#"
-    },
-    {
-      id: 5,
-      headline: `${ticker.value} Partners with Major Retailer for Distribution Deal`,
-      source: "Wall Street Journal",
-      date: "3 days ago",
-      sentiment: "neutral",
-      summary: "The strategic partnership is expected to expand market reach by 30% over the next two years.",
-      url: "#"
-    }
-  ];
-});
+// News articles data from database
+const newsArticles = ref<any[]>([]);
 
 // Dummy earnings call data
 const earningsData = computed(() => {
@@ -301,11 +259,20 @@ const loadTickerData = async () => {
   try {
     const data = await $fetch(`/api/ticker/${ticker.value}/data`);
     searchData.value = data.searches || [];
+    dataSourceTimestamps.value = data.timestamps || {};
 
     // Extract metadata from the most recent unified search
     const mostRecentUnified = searchData.value.find(s => s.data_version === 2 && s.search_metadata);
     if (mostRecentUnified && mostRecentUnified.search_metadata) {
       searchMetadata.value = mostRecentUnified.search_metadata;
+    }
+
+    // Extract news data from the most recent search with news data
+    const searchWithNews = searchData.value.find(s => s.news_data && Array.isArray(s.news_data));
+    if (searchWithNews && searchWithNews.news_data) {
+      newsArticles.value = searchWithNews.news_data;
+    } else {
+      newsArticles.value = [];
     }
 
     // Load statistics
@@ -316,6 +283,7 @@ const loadTickerData = async () => {
     searchData.value = [];
     statistics.value = {};
     searchMetadata.value = {};
+    newsArticles.value = [];
   } finally {
     loading.value = false;
   }
@@ -330,6 +298,83 @@ const handleRefresh = async () => {
 
 const navigateToSearch = () => {
   navigateTo('/');
+};
+
+// Individual section refresh handlers
+const refreshRedditPosts = async () => {
+  loadingReddit.value = true;
+  try {
+    // Default subreddits for search
+    const defaultSubreddits = ['wallstreetbets', 'stocks', 'investing'];
+
+    await $fetch('/api/reddit/search', {
+      method: 'POST',
+      body: {
+        ticker: ticker.value,
+        subreddits: defaultSubreddits
+      }
+    });
+
+    // Reload ticker data to show fresh results
+    await loadTickerData();
+  } catch (error) {
+    console.error('Failed to refresh Reddit posts:', error);
+  } finally {
+    loadingReddit.value = false;
+  }
+};
+
+const refreshNewsData = async () => {
+  loadingNews.value = true;
+  try {
+    await $fetch('/api/eodhd/newsData', {
+      method: 'POST',
+      body: { ticker: ticker.value }
+    });
+
+    // Reload ticker data to show fresh results
+    await loadTickerData();
+  } catch (error) {
+    console.error('Failed to refresh news data:', error);
+  } finally {
+    loadingNews.value = false;
+  }
+};
+
+const refreshFundamentals = async () => {
+  loadingFundamentals.value = true;
+  try {
+    await $fetch('/api/eodhd/fundamentalData', {
+      method: 'POST',
+      body: { ticker: ticker.value }
+    });
+
+    // Reload ticker data to show fresh results
+    await loadTickerData();
+  } catch (error) {
+    console.error('Failed to refresh fundamental data:', error);
+  } finally {
+    loadingFundamentals.value = false;
+  }
+};
+
+const refreshEarnings = async () => {
+  loadingEarnings.value = true;
+  try {
+    // Placeholder - no API endpoint yet for earnings
+    // When API is ready, call it here
+    console.log('Earnings refresh - API endpoint not yet implemented');
+
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Reload ticker data to show fresh results
+    await loadTickerData();
+  } catch (error) {
+    console.error('Failed to refresh earnings data:', error);
+  } finally {
+    loadingEarnings.value = false;
+  }
 };
 
 onMounted(async () => {

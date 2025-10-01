@@ -1,7 +1,27 @@
 <template>
   <div class="space-y-6">
+    <!-- Header with Refresh Button -->
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">News Articles</h2>
+      <UButton
+        @click="$emit('refresh')"
+        variant="soft"
+        icon="i-heroicons-arrow-path"
+        size="sm"
+        :loading="loading"
+      >
+        Refresh News
+      </UButton>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-16">
+      <UIcon name="i-heroicons-arrow-path" class="animate-spin text-4xl text-primary-600 mb-4" />
+      <p class="text-gray-600 dark:text-gray-400">Refreshing news data...</p>
+    </div>
+
     <!-- News Articles List -->
-    <div v-if="articles.length === 0" class="text-center py-12">
+    <div v-else-if="articles.length === 0" class="text-center py-12">
       <UIcon name="i-heroicons-newspaper" class="text-5xl text-gray-400 mb-3" />
       <p class="text-gray-600 dark:text-gray-400">No news articles found</p>
     </div>
@@ -28,55 +48,55 @@
               <!-- Header -->
               <div class="flex items-start justify-between">
                 <h3 class="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 flex-1">
-                  {{ article.headline }}
+                  {{ article.title }}
                 </h3>
-                <UBadge 
-                  :color="getSentimentBadgeColor(article.sentiment)"
+                <UBadge
+                  :color="getSentimentBadgeColor(article.sentiment?.polarity || 0.5)"
                   variant="subtle"
                   class="ml-2"
                 >
-                  {{ article.sentiment }}
+                  {{ getSentimentLabel(article.sentiment?.polarity || 0.5) }}
                 </UBadge>
               </div>
 
               <!-- Meta Information -->
               <div class="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                <span class="flex items-center space-x-1">
+                <span v-if="article.symbols && article.symbols.length > 0" class="flex items-center space-x-1">
                   <UIcon name="i-heroicons-building-office-2" class="w-4 h-4" />
-                  <span>{{ article.source }}</span>
+                  <span>{{ article.symbols[0] }}</span>
                 </span>
                 <span class="flex items-center space-x-1">
                   <UIcon name="i-heroicons-clock" class="w-4 h-4" />
-                  <span>{{ article.date }}</span>
+                  <span>{{ formatDate(article.date) }}</span>
                 </span>
               </div>
 
               <!-- Summary -->
               <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-                {{ article.summary }}
+                {{ article.content ? article.content.substring(0, 200) + '...' : 'No content available' }}
               </p>
 
               <!-- Actions -->
               <div class="flex items-center justify-between pt-2">
                 <div class="flex items-center space-x-3">
-                  <button 
-                    @click="toggleBookmark(article.id)"
+                  <button
+                    @click="toggleBookmark(article.link)"
                     class="text-gray-500 hover:text-primary-600 transition-colors"
                   >
-                    <UIcon 
-                      :name="isBookmarked(article.id) ? 'i-heroicons-bookmark-solid' : 'i-heroicons-bookmark'"
+                    <UIcon
+                      :name="isBookmarked(article.link) ? 'i-heroicons-bookmark-solid' : 'i-heroicons-bookmark'"
                       class="w-5 h-5"
                     />
                   </button>
-                  <button 
+                  <button
                     @click="shareArticle(article)"
                     class="text-gray-500 hover:text-primary-600 transition-colors"
                   >
                     <UIcon name="i-heroicons-share" class="w-5 h-5" />
                   </button>
                 </div>
-                <a 
-                  :href="article.url"
+                <a
+                  :href="article.link"
                   target="_blank"
                   class="text-primary-600 dark:text-primary-400 hover:underline text-sm flex items-center space-x-1"
                 >
@@ -93,9 +113,9 @@
     <!-- Pagination -->
     <div v-if="totalPages > 1" class="flex justify-center mt-6">
       <UPagination
-        v-model="currentPage"
-        :page-count="pageSize"
+        v-model:page="currentPage"
         :total="articles.length"
+        :items-per-page="pageSize"
       />
     </div>
 
@@ -138,14 +158,17 @@
 const props = defineProps<{
   ticker: string;
   articles: any[];
+  loading?: boolean;
 }>();
+
+defineEmits(['refresh']);
 
 // Pagination
 const currentPage = ref(1);
 const pageSize = 5;
 
 // Bookmarked articles (stored locally)
-const bookmarkedArticles = ref(new Set<number>());
+const bookmarkedArticles = ref(new Set<string>());
 
 const totalPages = computed(() => Math.ceil(props.articles.length / pageSize));
 
@@ -155,21 +178,29 @@ const paginatedArticles = computed(() => {
   return props.articles.slice(start, end);
 });
 
+// Helper function to determine sentiment from polarity value
+const getSentimentLabel = (polarity: number) => {
+  if (polarity >= 0.6) return 'positive';
+  if (polarity <= 0.4) return 'negative';
+  return 'neutral';
+};
+
 // Sentiment counts
-const positiveCount = computed(() => 
-  props.articles.filter(a => a.sentiment === 'positive').length
+const positiveCount = computed(() =>
+  props.articles.filter(a => getSentimentLabel(a.sentiment?.polarity || 0.5) === 'positive').length
 );
 
-const neutralCount = computed(() => 
-  props.articles.filter(a => a.sentiment === 'neutral').length
+const neutralCount = computed(() =>
+  props.articles.filter(a => getSentimentLabel(a.sentiment?.polarity || 0.5) === 'neutral').length
 );
 
-const negativeCount = computed(() => 
-  props.articles.filter(a => a.sentiment === 'negative').length
+const negativeCount = computed(() =>
+  props.articles.filter(a => getSentimentLabel(a.sentiment?.polarity || 0.5) === 'negative').length
 );
 
 // Helper functions
-const getSentimentBadgeColor = (sentiment: string) => {
+const getSentimentBadgeColor = (polarity: number) => {
+  const sentiment = getSentimentLabel(polarity);
   switch (sentiment) {
     case 'positive':
       return 'green';
@@ -181,7 +212,25 @@ const getSentimentBadgeColor = (sentiment: string) => {
   }
 };
 
-const toggleBookmark = (articleId: number) => {
+const formatDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  } catch {
+    return dateString;
+  }
+};
+
+const toggleBookmark = (articleId: string) => {
   if (bookmarkedArticles.value.has(articleId)) {
     bookmarkedArticles.value.delete(articleId);
   } else {
@@ -189,20 +238,20 @@ const toggleBookmark = (articleId: number) => {
   }
 };
 
-const isBookmarked = (articleId: number) => {
+const isBookmarked = (articleId: string) => {
   return bookmarkedArticles.value.has(articleId);
 };
 
 const shareArticle = (article: any) => {
   if (navigator.share) {
     navigator.share({
-      title: article.headline,
-      text: article.summary,
-      url: article.url
+      title: article.title,
+      text: article.content?.substring(0, 200) + '...',
+      url: article.link
     }).catch(err => console.log('Error sharing:', err));
   } else {
     // Fallback: copy to clipboard
-    navigator.clipboard.writeText(`${article.headline}\n\n${article.summary}\n\n${article.url}`);
+    navigator.clipboard.writeText(`${article.title}\n\n${article.link}`);
     alert('Article link copied to clipboard!');
   }
 };

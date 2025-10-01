@@ -28,11 +28,12 @@
 				:ui="{
 					body: { padding: 'p-0' },
 				}"
-				class="overflow-hidden"
+				class="overflow-hidden hover:bg-gray-50 dark:hover:bg-gray-800 hover:cursor-pointer"
+				@click.stop="navigateToWorkbench(tickerGroup.ticker)"
 			>
 				<!-- Main Row -->
 				<div
-					class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+					class="flex items-center justify-between p-4  transition-colors"
 				>
 					<div class="flex items-center space-x-4 flex-1">
 
@@ -40,36 +41,10 @@
 						<span class="font-bold text-primary-600 dark:text-primary-400 text-lg">
 							{{ tickerGroup.ticker }}
 						</span>
-
-						<!-- Most Recent Date -->
-						<span class="text-sm text-gray-600 dark:text-gray-400">
-							{{ formatDate(tickerGroup.mostRecentDate) }}
-						</span>
-
-						<!-- Total Posts Across All Searches -->
-						<UBadge size="sm" variant="subtle">
-							{{ tickerGroup.totalPosts }} total posts
-						</UBadge>
-
-						<!-- Number of Searches -->
-						<UBadge size="sm" color="gray" variant="outline">
-							{{ tickerGroup.searchCount }} search{{
-								tickerGroup.searchCount > 1 ? "es" : ""
-							}}
-						</UBadge>
 					</div>
 
 					<!-- Actions -->
 					<div class="flex items-center space-x-2">
-						<UButton
-							size="xs"
-							variant="soft"
-							@click.stop="navigateToWorkbench(tickerGroup.ticker)"
-							icon="i-heroicons-beaker"
-							class="text-primary-600 hover:bg-primary-100"
-						>
-							Open Workbench
-						</UButton>
 						<UButton
 							size="xs"
 							color="red"
@@ -116,7 +91,6 @@ const groupedHistory = computed(() => {
 				searches: [],
 				totalPosts: 0,
 				searchCount: 0,
-				mostRecentDate: search.created_at,
 				mostRecentSearch: search,
 			};
 		}
@@ -124,66 +98,17 @@ const groupedHistory = computed(() => {
 		groups[ticker].searches.push(search);
 		groups[ticker].totalPosts += search.result_count || 0;
 		groups[ticker].searchCount++;
-
-		// Update if this search is more recent
-		if (new Date(search.created_at) > new Date(groups[ticker].mostRecentDate)) {
-			groups[ticker].mostRecentDate = search.created_at;
-			groups[ticker].mostRecentSearch = search;
-		}
 	});
 
 	// Convert to array and sort by most recent date
-	return Object.values(groups).sort(
+	const sortedGroups = Object.values(groups).sort(
 		(a, b) => new Date(b.mostRecentDate) - new Date(a.mostRecentDate)
 	);
+
+	console.log("Grouped History:", sortedGroups);
+
+	return sortedGroups
 });
-
-const formatDate = (dateString: string) => {
-	const date = new Date(dateString);
-	const now = new Date();
-
-	// Helper function to get ordinal suffix
-	const getOrdinalSuffix = (day: number) => {
-		if (day > 3 && day < 21) return "th";
-		switch (day % 10) {
-			case 1:
-				return "st";
-			case 2:
-				return "nd";
-			case 3:
-				return "rd";
-			default:
-				return "th";
-		}
-	};
-
-	// Format as "January 15th, 2025 4:45pm EST"
-	const formatter = new Intl.DateTimeFormat("en-US", {
-		month: "long",
-		day: "numeric",
-		year: "numeric",
-		hour: "numeric",
-		minute: "2-digit",
-		hour12: true,
-		timeZone: "America/New_York",
-	});
-
-	const parts = formatter.formatToParts(date);
-	const month = parts.find((part) => part.type === "month")?.value;
-	const day = parseInt(parts.find((part) => part.type === "day")?.value || "0");
-	const year = parts.find((part) => part.type === "year")?.value;
-	const hour = parts.find((part) => part.type === "hour")?.value;
-	const minute = parts.find((part) => part.type === "minute")?.value;
-	const dayPeriod = parts.find((part) => part.type === "dayPeriod")?.value?.toLowerCase();
-
-	// Determine if it's EST or EDT based on the date
-	const isEST = date.getTimezoneOffset() === 300; // EST is UTC-5 (300 minutes)
-	const timeZone = isEST ? "EST" : "EDT";
-
-	return `${month} ${day}${getOrdinalSuffix(
-		day
-	)}, ${year} ${hour}:${minute}${dayPeriod} ${timeZone}`;
-};
 
 
 const loadHistory = async () => {
