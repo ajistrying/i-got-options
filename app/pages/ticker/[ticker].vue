@@ -6,6 +6,9 @@
         :ticker="ticker"
         :lastSearchTime="lastSearchTime"
         :totalSearches="totalSearches"
+        :redditSearchTime="redditSearchTime"
+        :newsDataTime="newsDataTime"
+        :fundamentalsDataTime="fundamentalsDataTime"
         @refresh="handleRefresh"
       />
 
@@ -85,6 +88,7 @@ const loadingEarnings = ref(false);
 const searchData = ref<any[]>([]);
 const statistics = ref<any>({});
 const searchMetadata = ref<any>({});
+const dataSourceTimestamps = ref<any>({});
 const selectedTab = ref('media'); // Use value instead of index
 
 const tabs = [
@@ -122,6 +126,10 @@ const totalSearches = computed(() => {
   const uniqueDates = new Set(searchData.value.map(s => s.created_at));
   return uniqueDates.size;
 });
+
+const redditSearchTime = computed(() => dataSourceTimestamps.value?.reddit || null);
+const newsDataTime = computed(() => dataSourceTimestamps.value?.news || null);
+const fundamentalsDataTime = computed(() => dataSourceTimestamps.value?.fundamentals || null);
 
 const allPosts = computed(() => {
   const posts = [];
@@ -251,6 +259,7 @@ const loadTickerData = async () => {
   try {
     const data = await $fetch(`/api/ticker/${ticker.value}/data`);
     searchData.value = data.searches || [];
+    dataSourceTimestamps.value = data.timestamps || {};
 
     // Extract metadata from the most recent unified search
     const mostRecentUnified = searchData.value.find(s => s.data_version === 2 && s.search_metadata);

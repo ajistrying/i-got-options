@@ -22,9 +22,24 @@
         <!-- Search Info -->
         <div class="border-l border-gray-200 dark:border-gray-700 pl-6">
           <div class="text-sm text-gray-600 dark:text-gray-400">
-            <div v-if="lastSearchTime" class="flex items-center space-x-2">
+            <div v-if="lastSearchTime" class="flex items-center space-x-2 mb-1">
               <UIcon name="i-heroicons-clock" class="w-4 h-4" />
-              <span>Last search ran: {{ formatDateString(lastSearchTime) }}</span>
+              <span>Last full search: {{ formatDateString(lastSearchTime) }}</span>
+            </div>
+            <!-- Individual Data Source Timestamps -->
+            <div class="flex items-center space-x-4 text-xs">
+              <div v-if="redditSearchTime" class="flex items-center space-x-1">
+                <UIcon name="i-simple-icons-reddit" class="w-3 h-3" />
+                <span>Reddit: {{ formatDateString(redditSearchTime) }}</span>
+              </div>
+              <div v-if="newsDataTime" class="flex items-center space-x-1">
+                <UIcon name="i-heroicons-newspaper" class="w-3 h-3" />
+                <span>News: {{ formatDateString(newsDataTime) }}</span>
+              </div>
+              <div v-if="fundamentalsDataTime" class="flex items-center space-x-1">
+                <UIcon name="i-heroicons-chart-bar" class="w-3 h-3" />
+                <span>Fundamentals: {{ formatDateString(fundamentalsDataTime) }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -50,6 +65,9 @@ const props = defineProps<{
   ticker: string;
   lastSearchTime: string | null;
   totalSearches: number;
+  redditSearchTime?: string | null;
+  newsDataTime?: string | null;
+  fundamentalsDataTime?: string | null;
 }>();
 
 const emit = defineEmits(['refresh', 'delete']);
@@ -84,6 +102,11 @@ const handleRefresh = async () => {
   setTimeout(() => {
     refreshing.value = false;
   }, 1000);
+};
+
+const formatDateString = (dateString: string | null | undefined) => {
+  if (!dateString) return null;
+  return formatDate(dateString);
 };
 
 const formatDate = (dateString: string) => {
