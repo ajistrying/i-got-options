@@ -48,6 +48,13 @@
       <!-- Actions -->
       <div class="flex items-center space-x-3">
         <UButton
+          @click="emit('open-journal')"
+          variant="outline"
+          icon="i-heroicons-document-text"
+        >
+          Journal
+        </UButton>
+        <UButton
           @click="handleRefresh"
           variant="soft"
           icon="i-heroicons-arrow-path"
@@ -70,7 +77,7 @@ const props = defineProps<{
   fundamentalsDataTime?: string | null;
 }>();
 
-const emit = defineEmits(['refresh', 'delete']);
+const emit = defineEmits(['refresh', 'delete', 'open-journal']);
 
 const refreshing = ref(false);
 
