@@ -21,45 +21,6 @@
     </div>
 
     <!-- Earnings Overview -->
-    <div v-else class="space-y-6">
-    <!-- Earnings Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <UCard class="text-center">
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Latest EPS</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ latestEarnings?.eps || '$2.45' }}
-          </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Est: {{ latestEarnings?.epsEstimate || '$2.32' }}
-          </p>
-        </div>
-      </UCard>
-
-      <UCard class="text-center">
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Latest Revenue</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ latestEarnings?.revenue || '$15.2B' }}
-          </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Est: {{ latestEarnings?.revenueEstimate || '$14.8B' }}
-          </p>
-        </div>
-      </UCard>
-
-      <UCard class="text-center">
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Next Earnings</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Apr 25
-          </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            In 21 days
-          </p>
-        </div>
-      </UCard>
-    </div>
 
     <!-- Earnings Call History -->
     <div v-if="earnings && earnings.length > 0" class="space-y-4">
@@ -74,7 +35,7 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-4">
                 <h3 class="text-lg font-semibold">Q{{ earning.quarter }} {{ earning.year }}</h3>
-                <UBadge color="gray" variant="subtle">
+                <UBadge color="neutral" variant="subtle">
                   {{ earning.symbol }}
                 </UBadge>
               </div>
@@ -86,37 +47,59 @@
 
           <!-- Earnings Content -->
           <div class="space-y-6">
-            <!-- Transcript Section -->
-            <div v-if="getTranscript(earning)" class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3">
-                Transcript
-              </h4>
-              <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap max-h-96 overflow-y-auto">
-                {{ getTranscript(earning) }}
+            <!-- Transcript Section - Show if transcript exists -->
+            <div v-if="hasTranscript(earning)">
+              <button
+                @click="toggleTranscript(earning)"
+                class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <div class="flex items-center space-x-3">
+                  <UIcon
+                    :name="isTranscriptExpanded(earning) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
+                    class="text-lg"
+                  />
+                  <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">
+                    Transcript
+                  </h4>
+                </div>
+                <UButton
+                  size="xs"
+                  variant="ghost"
+                  icon="i-heroicons-arrow-down-tray"
+                  @click.stop="downloadTranscript(earning)"
+                >
+                  Download
+                </UButton>
+              </button>
+
+              <!-- Transcript Content (Toggleable) -->
+              <div
+                v-if="isTranscriptExpanded(earning)"
+                class="mt-2 p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+              >
+                <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto font-mono">
+                  {{ getTranscript(earning) }}
+                </div>
               </div>
             </div>
 
-            <!-- Actions -->
-            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div class="flex items-center space-x-3">
+            <!-- Retrieve Transcript Button - Show if transcript doesn't exist -->
+            <div v-else class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <UIcon name="i-heroicons-document-text" class="text-lg text-gray-500" />
+                  <span class="text-sm text-gray-600 dark:text-gray-400">
+                    Earnings call transcript not retrieved
+                  </span>
+                </div>
                 <UButton
                   size="sm"
                   variant="soft"
                   icon="i-heroicons-document-text"
                   @click="fetchTranscript(earning)"
                   :loading="isLoadingTranscript(earning)"
-                  :disabled="hasTranscript(earning)"
                 >
-                  {{ hasTranscript(earning) ? 'Transcript Loaded' : 'Retrieve Transcript' }}
-                </UButton>
-                <UButton
-                  v-if="hasTranscript(earning)"
-                  size="sm"
-                  variant="ghost"
-                  icon="i-heroicons-arrow-down-tray"
-                  @click="downloadTranscript(earning)"
-                >
-                  Download
+                  Retrieve Transcript
                 </UButton>
               </div>
             </div>
@@ -135,7 +118,6 @@
         Click "Refresh Earnings" to fetch earnings call data for {{ ticker }}
       </p>
     </div>
-    </div>
   </div>
 </template>
 
@@ -151,9 +133,48 @@ const emit = defineEmits(['refresh']);
 // State for transcript loading and storage
 const loadingTranscripts = ref<Set<string>>(new Set());
 const transcripts = ref<Map<string, any>>(new Map());
+const expandedTranscripts = ref<Set<string>>(new Set());
+
+// Check database for existing transcripts on load
+const checkExistingTranscripts = async () => {
+  try {
+    const response = await $fetch('/api/roic/earnings-transcripts-check', {
+      method: 'POST',
+      body: { ticker: props.ticker, earningsCalls: props.earnings }
+    });
+
+    if (response.success && response.transcripts) {
+      Object.entries(response.transcripts).forEach(([key, transcript]) => {
+        transcripts.value.set(key, transcript);
+      });
+    }
+  } catch (error) {
+    console.error('Failed to check existing transcripts:', error);
+  }
+};
+
+// Watch for changes in earnings data and check for existing transcripts
+watch(() => props.earnings, async (newEarnings) => {
+  if (newEarnings && newEarnings.length > 0) {
+    await checkExistingTranscripts();
+  }
+}, { immediate: true });
 
 // Helper function to create unique key for earnings call
 const getEarningKey = (earning: any) => `${earning.year}-${earning.quarter}`;
+
+// Toggle transcript expansion
+const toggleTranscript = (earning: any) => {
+  const key = getEarningKey(earning);
+  expandedTranscripts.value.has(key)
+    ? expandedTranscripts.value.delete(key)
+    : expandedTranscripts.value.add(key);
+};
+
+// Check if transcript is expanded
+const isTranscriptExpanded = (earning: any) => {
+  return expandedTranscripts.value.has(getEarningKey(earning));
+};
 
 // Check if transcript is loading
 const isLoadingTranscript = (earning: any) => {
@@ -165,36 +186,71 @@ const hasTranscript = (earning: any) => {
   return transcripts.value.has(getEarningKey(earning));
 };
 
+// Format transcript for display
+const formatTranscript = (transcriptData: any): string => {
+  if (!transcriptData) return '';
+
+  // If it's a string, return it directly
+  if (typeof transcriptData === 'string') return transcriptData;
+
+  // If it has a transcript property (nested structure)
+  if (transcriptData.transcript) {
+    return formatTranscript(transcriptData.transcript);
+  }
+
+  // If it's an array of sections/speakers
+  if (Array.isArray(transcriptData)) {
+    return transcriptData.map((section: any, index: number) => {
+      if (typeof section === 'string') return section;
+
+      // Format section with speaker
+      if (section.speaker && section.text) {
+        const speakerPrefix = index > 0 ? '\n' : '';
+        return `${speakerPrefix}${section.speaker}:\n${section.text}`;
+      }
+
+      // Format section with title and content
+      if (section.title && section.content) {
+        return `=== ${section.title} ===\n${section.content}\n`;
+      }
+
+      return JSON.stringify(section, null, 2);
+    }).join('\n\n');
+  }
+
+  // If it has sections property
+  if (transcriptData.sections && Array.isArray(transcriptData.sections)) {
+    return formatTranscript(transcriptData.sections);
+  }
+
+  // If it has text or content property
+  if (transcriptData.text) return transcriptData.text;
+  if (transcriptData.content) return transcriptData.content;
+
+  // Fallback to formatted JSON
+  return JSON.stringify(transcriptData, null, 2);
+};
+
 // Get transcript text
 const getTranscript = (earning: any) => {
   const transcript = transcripts.value.get(getEarningKey(earning));
-  if (!transcript) return null;
-
-  // Format transcript data - adjust this based on actual API response structure
-  return JSON.stringify(transcript, null, 2);
+  return transcript ? formatTranscript(transcript) : null;
 };
 
 // Fetch transcript from API
 const fetchTranscript = async (earning: any) => {
   const key = getEarningKey(earning);
-
-  if (loadingTranscripts.value.has(key) || transcripts.value.has(key)) {
-    return;
-  }
+  if (loadingTranscripts.value.has(key) || transcripts.value.has(key)) return;
 
   loadingTranscripts.value.add(key);
 
   try {
     const response = await $fetch('/api/roic/earnings-transcript', {
       method: 'POST',
-      body: {
-        ticker: props.ticker,
-        year: earning.year,
-        quarter: earning.quarter
-      }
+      body: { ticker: props.ticker, year: earning.year, quarter: earning.quarter }
     });
 
-    if (response.success && response.transcript) {
+    if (response.success && 'transcript' in response && response.transcript) {
       transcripts.value.set(key, response.transcript);
     }
   } catch (error) {
@@ -235,11 +291,6 @@ ${JSON.stringify(transcript, null, 2)}
   link.click();
   URL.revokeObjectURL(url);
 };
-
-// Get latest earnings (for summary cards - currently showing placeholder data)
-const latestEarnings = computed(() => {
-  return props.earnings && props.earnings.length > 0 ? props.earnings[0] : null;
-});
 </script>
 
 <style scoped>
