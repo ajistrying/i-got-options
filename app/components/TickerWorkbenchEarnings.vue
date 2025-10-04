@@ -23,8 +23,8 @@
     <!-- Earnings Overview -->
 
     <!-- Earnings Call History -->
-    <div v-if="earnings && earnings.length > 0" class="space-y-4">
-      <TransitionGroup name="list">
+    <div v-if="earnings && earnings.length > 0">
+      <TransitionGroup name="list" tag="div" class="space-y-4">
         <UCard
           v-for="earning in earnings"
           :key="`${earning.year}-${earning.quarter}`"
@@ -62,14 +62,24 @@
                     Transcript
                   </h4>
                 </div>
-                <UButton
-                  size="xs"
-                  variant="ghost"
-                  icon="i-heroicons-arrow-down-tray"
-                  @click.stop="downloadTranscript(earning)"
-                >
-                  Download
-                </UButton>
+                <div class="flex items-center space-x-2">
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    icon="i-heroicons-sparkles"
+                    @click.stop="generateSummary(earning)"
+                  >
+                    AI Summary
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    icon="i-heroicons-arrow-down-tray"
+                    @click.stop="downloadTranscript(earning)"
+                  >
+                    Download
+                  </UButton>
+                </div>
               </button>
 
               <!-- Transcript Content (Toggleable) -->
@@ -290,6 +300,11 @@ ${JSON.stringify(transcript, null, 2)}
   link.download = `${props.ticker}_Q${earning.quarter}_${earning.year}_transcript.txt`;
   link.click();
   URL.revokeObjectURL(url);
+};
+
+// Generate AI summary of transcript
+const generateSummary = (earning: any) => {
+  console.log('Generating Summary...');
 };
 </script>
 

@@ -246,36 +246,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Combined Summary Stats -->
-    <UCard class="mt-6">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="text-center">
-          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ posts.length }}
-          </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Reddit Posts</p>
-        </div>
-        <div class="text-center">
-          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ articles.length }}
-          </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">News Articles</p>
-        </div>
-        <div class="text-center">
-          <p class="text-2xl font-bold text-primary-600 dark:text-primary-400">
-            {{ totalEngagement }}
-          </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Total Engagement</p>
-        </div>
-        <div class="text-center">
-          <p class="text-2xl font-bold" :class="overallSentimentColor">
-            {{ overallSentiment }}
-          </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Overall Sentiment</p>
-        </div>
-      </div>
-    </UCard>
   </div>
 </template>
 

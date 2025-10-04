@@ -34,10 +34,6 @@
       <!-- Main Content -->
       <div v-else class="space-y-8">
         <!-- Statistics Section -->
-        <TickerWorkbenchStats 
-          :stats="statistics"
-          :ticker="ticker"
-        />
 
         <!-- Tabs for different views -->
         <UTabs :items="tabs" v-model="selectedTab" :default-value="'media'">
