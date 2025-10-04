@@ -200,6 +200,69 @@
           </p>
         </div>
       </UCard>
+
+      <!-- Credit Ratios Chart -->
+      <UCard v-if="hasCreditRatios">
+        <template #header>
+          <h3 class="text-lg font-semibold">Credit & Debt Ratios</h3>
+        </template>
+        <LineChart
+          :data="creditRatiosData"
+          :categories="creditRatiosCategories"
+          :height="300"
+          :x-formatter="(i) => creditRatiosData[i]?.period || ''"
+          :y-formatter="(v) => v.toFixed(2)"
+          :show-legend="true"
+          :curve-type="'linear'"
+        />
+        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            <span class="font-medium">Key Insights:</span> Total Debt/EBITDA shows leverage relative to earnings. Debt/Equity measures financial leverage. Lower ratios indicate less financial risk and stronger balance sheet health.
+          </p>
+        </div>
+      </UCard>
+
+      <!-- Liquidity Ratios Chart -->
+      <UCard v-if="hasLiquidityRatios">
+        <template #header>
+          <h3 class="text-lg font-semibold">Liquidity Ratios</h3>
+        </template>
+        <LineChart
+          :data="liquidityRatiosData"
+          :categories="liquidityRatiosCategories"
+          :height="300"
+          :x-formatter="(i) => liquidityRatiosData[i]?.period || ''"
+          :y-formatter="(v) => v.toFixed(2)"
+          :show-legend="true"
+          :curve-type="'linear'"
+        />
+        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            <span class="font-medium">Key Insights:</span> Current Ratio >1 means more current assets than liabilities. Quick Ratio excludes inventory. Altman Z-Score >2.99 suggests low bankruptcy risk. Higher ratios indicate stronger short-term financial health.
+          </p>
+        </div>
+      </UCard>
+
+      <!-- Yield Analysis Ratios Chart -->
+      <UCard v-if="hasYieldRatios">
+        <template #header>
+          <h3 class="text-lg font-semibold">Yield Analysis Ratios</h3>
+        </template>
+        <LineChart
+          :data="yieldRatiosData"
+          :categories="yieldRatiosCategories"
+          :height="300"
+          :x-formatter="(i) => yieldRatiosData[i]?.period || ''"
+          :y-formatter="formatPercentage"
+          :show-legend="true"
+          :curve-type="'linear'"
+        />
+        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            <span class="font-medium">Key Insights:</span> FCF Yield shows cash generation relative to market cap. Shareholder Yield includes buybacks and dividends. Capital Yield measures total capital returned. Higher yields indicate better returns to investors.
+          </p>
+        </div>
+      </UCard>
     </div>
   </div>
 </template>
@@ -215,6 +278,11 @@ const emit = defineEmits(['refresh']);
 
 const loading = ref(false);
 const fundamentalData = ref<any>(null);
+const ratiosData = ref<any>({
+  credit: null,
+  liquidity: null,
+  yield: null
+});
 const selectedPeriod = ref<'yearly' | 'quarterly'>('yearly');
 
 const handleRefresh = () => {
@@ -420,6 +488,81 @@ const freeCashFlowCategories = {
   freeCashFlow: { name: 'Free Cash Flow', color: '#10b981' }
 };
 
+// Credit Ratios Data
+const hasCreditRatios = computed(() => {
+  return ratiosData.value.credit && (ratiosData.value.credit.annual?.length > 0 || ratiosData.value.credit.quarterly?.length > 0);
+});
+
+const creditRatiosData = computed(() => {
+  if (!hasCreditRatios.value) return [];
+
+  const period = selectedPeriod.value === 'yearly' ? 'annual' : 'quarterly';
+  const data = ratiosData.value.credit[period] || [];
+
+  return data.slice(0, 8).reverse().map(item => ({
+    period: item.period_label || item.period,
+    debtToEbitda: item.tot_debt_to_ebitda || 0,
+    debtToEquity: item.tot_debt_to_tot_eqy || 0,
+    debtToAssets: item.tot_debt_to_tot_asset || 0
+  }));
+});
+
+const creditRatiosCategories = {
+  debtToEbitda: { name: 'Debt/EBITDA', color: '#3b82f6' },
+  debtToEquity: { name: 'Debt/Equity', color: '#ef4444' },
+  debtToAssets: { name: 'Debt/Assets', color: '#f59e0b' }
+};
+
+// Liquidity Ratios Data
+const hasLiquidityRatios = computed(() => {
+  return ratiosData.value.liquidity && (ratiosData.value.liquidity.annual?.length > 0 || ratiosData.value.liquidity.quarterly?.length > 0);
+});
+
+const liquidityRatiosData = computed(() => {
+  if (!hasLiquidityRatios.value) return [];
+
+  const period = selectedPeriod.value === 'yearly' ? 'annual' : 'quarterly';
+  const data = ratiosData.value.liquidity[period] || [];
+
+  return data.slice(0, 8).reverse().map(item => ({
+    period: item.period_label || item.period,
+    currentRatio: item.cur_ratio || 0,
+    quickRatio: item.quick_ratio || 0,
+    altmanZScore: item.altman_z_score || 0
+  }));
+});
+
+const liquidityRatiosCategories = {
+  currentRatio: { name: 'Current Ratio', color: '#3b82f6' },
+  quickRatio: { name: 'Quick Ratio', color: '#10b981' },
+  altmanZScore: { name: 'Altman Z-Score', color: '#8b5cf6' }
+};
+
+// Yield Ratios Data
+const hasYieldRatios = computed(() => {
+  return ratiosData.value.yield && (ratiosData.value.yield.annual?.length > 0 || ratiosData.value.yield.quarterly?.length > 0);
+});
+
+const yieldRatiosData = computed(() => {
+  if (!hasYieldRatios.value) return [];
+
+  const period = selectedPeriod.value === 'yearly' ? 'annual' : 'quarterly';
+  const data = ratiosData.value.yield[period] || [];
+
+  return data.slice(0, 8).reverse().map(item => ({
+    period: item.period_label || item.period,
+    fcfYield: (item.free_cash_flow_yield || 0) / 100,
+    shareholderYield: (item.shareholder_yield_ex_debt || 0) / 100,
+    capitalYield: (item.capital_yield || 0) / 100
+  }));
+});
+
+const yieldRatiosCategories = {
+  fcfYield: { name: 'FCF Yield', color: '#3b82f6' },
+  shareholderYield: { name: 'Shareholder Yield', color: '#10b981' },
+  capitalYield: { name: 'Capital Yield', color: '#f59e0b' }
+};
+
 // Fetch fundamental data
 const fetchFundamentalData = async () => {
   loading.value = true;
@@ -433,13 +576,38 @@ const fetchFundamentalData = async () => {
   }
 };
 
+// Fetch ratios data from database
+const fetchRatiosData = async () => {
+  try {
+    const data = await $fetch(`/api/ticker/${props.ticker}/data`);
+    const searches = data.searches || [];
+
+    // Get the most recent search with ratios data
+    const searchWithRatios = searches.find((s: any) =>
+      s.credit_ratios_data || s.liquidity_ratios_data || s.yield_ratios_data
+    );
+
+    if (searchWithRatios) {
+      ratiosData.value = {
+        credit: searchWithRatios.credit_ratios_data || null,
+        liquidity: searchWithRatios.liquidity_ratios_data || null,
+        yield: searchWithRatios.yield_ratios_data || null
+      };
+    }
+  } catch (error) {
+    console.error('Failed to fetch ratios data:', error);
+  }
+};
+
 // Fetch data on mount
 onMounted(() => {
   fetchFundamentalData();
+  fetchRatiosData();
 });
 
 // Refetch when ticker changes
 watch(() => props.ticker, () => {
   fetchFundamentalData();
+  fetchRatiosData();
 });
 </script>

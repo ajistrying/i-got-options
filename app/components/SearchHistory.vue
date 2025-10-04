@@ -33,7 +33,7 @@
 			>
 				<!-- Main Row -->
 				<div
-					class="flex items-center justify-between p-4  transition-colors"
+					class="flex items-center justify-between p-1  transition-colors"
 				>
 					<div class="flex items-center space-x-4 flex-1">
 
@@ -104,8 +104,6 @@ const groupedHistory = computed(() => {
 	const sortedGroups = Object.values(groups).sort(
 		(a, b) => new Date(b.mostRecentDate) - new Date(a.mostRecentDate)
 	);
-
-	console.log("Grouped History:", sortedGroups);
 
 	return sortedGroups
 });

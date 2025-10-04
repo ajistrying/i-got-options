@@ -76,49 +76,6 @@
         </div>
       </UCard>
     </div>
-
-    <!-- Sentiment Distribution -->
-    <UCard>
-      <template #header>
-        <h3 class="text-base font-medium">Overall Sentiment Distribution</h3>
-      </template>
-      <!-- Streamlined horizontal bar chart -->
-      <div class="flex h-8 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
-        <div
-          :style="{ width: `${positiveSentimentTotal}%` }"
-          class="bg-green-500 dark:bg-green-600 transition-all duration-500"
-        />
-        <div
-          :style="{ width: `${neutralSentimentTotal}%` }"
-          class="bg-gray-400 dark:bg-gray-500 transition-all duration-500"
-        />
-        <div
-          :style="{ width: `${negativeSentimentTotal}%` }"
-          class="bg-red-500 dark:bg-red-600 transition-all duration-500"
-        />
-      </div>
-      <!-- Compact legend -->
-      <div class="flex justify-between mt-3">
-        <div class="flex items-center space-x-1">
-          <div class="w-3 h-3 rounded-full bg-green-500 dark:bg-green-600" />
-          <span class="text-sm text-gray-600 dark:text-gray-400">
-            Positive {{ positiveSentimentTotal }}%
-          </span>
-        </div>
-        <div class="flex items-center space-x-1">
-          <div class="w-3 h-3 rounded-full bg-gray-400 dark:bg-gray-500" />
-          <span class="text-sm text-gray-600 dark:text-gray-400">
-            Neutral {{ neutralSentimentTotal }}%
-          </span>
-        </div>
-        <div class="flex items-center space-x-1">
-          <div class="w-3 h-3 rounded-full bg-red-500 dark:bg-red-600" />
-          <span class="text-sm text-gray-600 dark:text-gray-400">
-            Negative {{ negativeSentimentTotal }}%
-          </span>
-        </div>
-      </div>
-    </UCard>
   </div>
 </template>
 

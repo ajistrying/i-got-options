@@ -34,10 +34,6 @@
       <!-- Main Content -->
       <div v-else class="space-y-8">
         <!-- Statistics Section -->
-        <TickerWorkbenchStats 
-          :stats="statistics"
-          :ticker="ticker"
-        />
 
         <!-- Tabs for different views -->
         <UTabs :items="tabs" v-model="selectedTab" :default-value="'media'">
@@ -201,58 +197,8 @@ const uniqueSubreddits = computed(() => {
 // News articles data from database
 const newsArticles = ref<any[]>([]);
 
-// Dummy earnings call data
-const earningsData = computed(() => {
-  return [
-    {
-      id: 1,
-      date: "Q4 2024",
-      callDate: "January 15, 2025",
-      eps: "$2.45",
-      epsEstimate: "$2.32",
-      revenue: "$15.2B",
-      revenueEstimate: "$14.8B",
-      sentiment: "bullish",
-      transcriptHighlights: [
-        "Revenue exceeded guidance by 8%, driven by strong performance in North American markets",
-        "Operating margin expanded 250 basis points year-over-year to 23.5%",
-        "Announcing expansion into Asian markets with $500M investment in Q1 2025",
-        "R&D investment increased by 20% to accelerate AI product development",
-        "Free cash flow reached record $4.2B, up 18% YoY"
-      ],
-      ceoQuotes: [
-        "We're extremely pleased with our performance this quarter, demonstrating the strength of our business model and the dedication of our team.",
-        "Looking ahead, we see significant opportunities for growth, particularly in AI and cloud services."
-      ],
-      guidanceNext: {
-        revenue: "$16.0B - $16.5B",
-        eps: "$2.50 - $2.65"
-      }
-    },
-    {
-      id: 2,
-      date: "Q3 2024",
-      callDate: "October 18, 2024",
-      eps: "$2.28",
-      epsEstimate: "$2.25",
-      revenue: "$14.1B",
-      revenueEstimate: "$14.0B",
-      sentiment: "neutral",
-      transcriptHighlights: [
-        "Sequential improvement in gross margins despite supply chain challenges",
-        "Customer acquisition costs decreased by 15%",
-        "Successfully launched three new products ahead of schedule"
-      ],
-      ceoQuotes: [
-        "We're navigating a challenging macro environment while continuing to invest in our future."
-      ],
-      guidanceNext: {
-        revenue: "$14.8B - $15.2B",
-        eps: "$2.30 - $2.35"
-      }
-    }
-  ];
-});
+// Earnings call data from database
+const earningsData = ref<any[]>([]);
 
 const loadTickerData = async () => {
   loading.value = true;
@@ -275,6 +221,14 @@ const loadTickerData = async () => {
       newsArticles.value = [];
     }
 
+    // Extract earnings calls data from the most recent search with earnings data
+    const searchWithEarnings = searchData.value.find(s => s.earnings_calls_data && Array.isArray(s.earnings_calls_data));
+    if (searchWithEarnings && searchWithEarnings.earnings_calls_data) {
+      earningsData.value = searchWithEarnings.earnings_calls_data;
+    } else {
+      earningsData.value = [];
+    }
+
     // Load statistics
     const stats = await $fetch(`/api/ticker/${ticker.value}/stats`);
     statistics.value = stats;
@@ -284,6 +238,7 @@ const loadTickerData = async () => {
     statistics.value = {};
     searchMetadata.value = {};
     newsArticles.value = [];
+    earningsData.value = [];
   } finally {
     loading.value = false;
   }
@@ -344,10 +299,25 @@ const refreshNewsData = async () => {
 const refreshFundamentals = async () => {
   loadingFundamentals.value = true;
   try {
-    await $fetch('/api/eodhd/fundamentalData', {
-      method: 'POST',
-      body: { ticker: ticker.value }
-    });
+    // Fetch all fundamental data in parallel
+    await Promise.all([
+      $fetch('/api/eodhd/fundamentalData', {
+        method: 'POST',
+        body: { ticker: ticker.value }
+      }),
+      $fetch('/api/roic/credit-ratios', {
+        method: 'POST',
+        body: { ticker: ticker.value }
+      }),
+      $fetch('/api/roic/liquidity-ratios', {
+        method: 'POST',
+        body: { ticker: ticker.value }
+      }),
+      $fetch('/api/roic/yield-analysis-ratios', {
+        method: 'POST',
+        body: { ticker: ticker.value }
+      })
+    ]);
 
     // Reload ticker data to show fresh results
     await loadTickerData();
@@ -361,12 +331,10 @@ const refreshFundamentals = async () => {
 const refreshEarnings = async () => {
   loadingEarnings.value = true;
   try {
-    // Placeholder - no API endpoint yet for earnings
-    // When API is ready, call it here
-    console.log('Earnings refresh - API endpoint not yet implemented');
-
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await $fetch('/api/roic/earnings-calls', {
+      method: 'POST',
+      body: { ticker: ticker.value }
+    });
 
     // Reload ticker data to show fresh results
     await loadTickerData();
