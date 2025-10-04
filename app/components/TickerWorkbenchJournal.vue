@@ -1,74 +1,118 @@
 <template>
-  <UDrawer v-model:open="isOpen" direction="bottom" :ui="{ width: 'max-w-full', body: { base: 'overflow-visible' } }">
+  <UDrawer v-model:open="isOpen" direction="right">
     <template #header>
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between w-full">
         <div class="flex items-center space-x-3">
           <UIcon name="i-heroicons-document-text" class="w-6 h-6 text-primary-600" />
           <div>
             <h2 class="text-xl font-semibold">{{ ticker }} Journal</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ formattedEntryDate }}</p>
           </div>
         </div>
-        <div class="flex items-center space-x-2">
-          <UButton
-            v-if="hasUnsavedChanges"
-            @click="saveEntry"
-            :loading="saving"
-            icon="i-heroicons-check"
-            size="sm"
-          >
-            Save
-          </UButton>
-          <span v-if="lastSaved" class="text-xs text-gray-500">
-            Saved {{ formatRelativeTime(lastSaved) }}
-          </span>
-        </div>
+        <UButton
+          @click="createNewEntry"
+          :disabled="isToday"
+          icon="i-heroicons-plus"
+          variant="outline"
+        >
+          New Entry
+        </UButton>
       </div>
     </template>
 
     <template #body>
-      <div class="flex flex-col h-[60vh] max-h-[600px]">
-        <!-- Entry Navigation -->
-        <div class="flex items-center space-x-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-          <UButton
-            @click="createNewEntry"
-            :disabled="isToday"
-            icon="i-heroicons-plus"
-            size="sm"
-            variant="outline"
-          >
-            Today
-          </UButton>
-          <div class="flex-1 overflow-x-auto">
-            <div class="flex space-x-2">
-              <UButton
-                v-for="entry in journals"
-                :key="entry.id"
-                @click="selectEntry(entry)"
-                :variant="selectedEntry?.id === entry.id ? 'solid' : 'soft'"
-                size="sm"
-              >
-                <div class="flex flex-col items-start">
-                  <span class="text-xs">{{ formatEntryDate(entry.entry_date) }}</span>
-                  <span class="text-[10px] text-gray-500 dark:text-gray-400">
-                    Updated {{ formatRelativeTime(entry.updated_at) }}
-                  </span>
-                </div>
-              </UButton>
-            </div>
-          </div>
-        </div>
-
+      <div class="flex flex-col h-full min-w-96">
         <!-- Journal Editor -->
-        <div class="flex-1 overflow-y-auto">
+        <div class="mb-4">
           <UTextarea
             v-model="currentContent"
-            :rows="15"
+            :rows="10"
             placeholder="Write your thoughts, observations, and analysis here..."
             autoresize
-            :ui="{ base: 'w-full min-h-full resize-none', wrapper: 'h-full' }"
+            class="w-full"
             @input="handleContentChange"
           />
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center space-x-2">
+            <UButton
+              @click="saveEntry"
+              :loading="saving"
+              :disabled="!hasUnsavedChanges"
+              icon="i-heroicons-check"
+              color="primary"
+            >
+              Save
+            </UButton>
+            <span v-if="lastSaved" class="text-xs text-gray-500">
+              Saved {{ formatRelativeTime(lastSaved) }}
+            </span>
+          </div>
+          <UButton
+            v-if="selectedEntry?.id"
+            @click="deleteEntry"
+            :loading="deleting"
+            color="neutral"
+            variant="outline"
+            icon="i-heroicons-trash"
+            class="text-red-600 hover:text-red-800 cursor-pointer"
+          >
+            Delete
+          </UButton>
+        </div>
+
+        <!-- Previous Entries List -->
+        <div class="flex-1 overflow-y-auto mt-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Previous Entries</h3>
+            <span class="text-xs text-gray-500">{{ journals.length }} total</span>
+          </div>
+          <div v-if="paginatedJournals.length === 0" class="text-sm text-gray-500 text-center py-8">
+            No previous entries
+          </div>
+          <div v-else class="space-y-2">
+            <div
+              v-for="entry in paginatedJournals"
+              :key="entry.id"
+              @click="selectEntry(entry)"
+              :class="[
+                'p-3 rounded-lg border cursor-pointer transition-all',
+                selectedEntry?.id === entry.id
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700'
+              ]"
+            >
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium">{{ formatEntryDate(entry.entry_date) }}</span>
+                <span class="text-xs text-gray-500">{{ formatRelativeTime(entry.updated_at) }}</span>
+              </div>
+              <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                {{ entry.content || 'Empty entry' }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div v-if="totalPages > 1" class="flex items-center justify-center space-x-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <UButton
+              @click="currentPage--"
+              :disabled="currentPage === 1"
+              icon="i-heroicons-chevron-left"
+              size="sm"
+              variant="outline"
+            />
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              Page {{ currentPage }} of {{ totalPages }}
+            </span>
+            <UButton
+              @click="currentPage++"
+              :disabled="currentPage === totalPages"
+              icon="i-heroicons-chevron-right"
+              size="sm"
+              variant="outline"
+            />
+          </div>
         </div>
       </div>
     </template>
@@ -104,8 +148,21 @@ const selectedEntry = ref<Journal | null>(null);
 const currentContent = ref('');
 const hasUnsavedChanges = ref(false);
 const saving = ref(false);
+const deleting = ref(false);
 const lastSaved = ref<string | null>(null);
 const loading = ref(false);
+
+// Pagination
+const currentPage = ref(1);
+const itemsPerPage = 10;
+
+const totalPages = computed(() => Math.ceil(journals.value.length / itemsPerPage));
+
+const paginatedJournals = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return journals.value.slice(start, end);
+});
 
 // Load journals when drawer opens
 watch(() => props.open, async (newValue) => {
@@ -122,15 +179,14 @@ const isToday = computed(() => {
   return selectedEntry.value.entry_date === today;
 });
 
-const formattedEntryDate = computed(() => {
-  if (!selectedEntry.value) return 'New Entry';
-  return formatEntryDate(selectedEntry.value.entry_date);
-});
-
 const loadJournals = async () => {
   try {
     const response = await $fetch(`/api/ticker/${props.ticker}/journals`);
     journals.value = response.journals || [];
+    // Reset to first page if current page is out of bounds
+    if (currentPage.value > totalPages.value && totalPages.value > 0) {
+      currentPage.value = 1;
+    }
   } catch (error) {
     console.error('Failed to load journals:', error);
     journals.value = [];
@@ -213,19 +269,31 @@ const saveEntry = async () => {
   }
 };
 
-// Auto-save functionality (debounced)
-let saveTimeout: NodeJS.Timeout | null = null;
-watch(currentContent, () => {
-  if (saveTimeout) {
-    clearTimeout(saveTimeout);
+const deleteEntry = async () => {
+  if (!selectedEntry.value?.id) return;
+
+  if (!confirm('Are you sure you want to delete this journal entry?')) {
+    return;
   }
 
-  if (hasUnsavedChanges.value) {
-    saveTimeout = setTimeout(() => {
-      saveEntry();
-    }, 2000); // Auto-save after 2 seconds of inactivity
+  deleting.value = true;
+  try {
+    const response = await $fetch(`/api/ticker/${props.ticker}/journals/${selectedEntry.value.id}`, {
+      method: 'DELETE'
+    });
+
+    if (response.success) {
+      // Reload journals list
+      await loadJournals();
+      // Load today's entry or create a new one
+      await loadTodaysEntry();
+    }
+  } catch (error) {
+    console.error('Failed to delete journal entry:', error);
+  } finally {
+    deleting.value = false;
   }
-});
+};
 
 const formatEntryDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -267,11 +335,4 @@ const formatRelativeTime = (dateString: string) => {
     return `${days}d ago`;
   }
 };
-
-// Cleanup timeout on unmount
-onUnmounted(() => {
-  if (saveTimeout) {
-    clearTimeout(saveTimeout);
-  }
-});
 </script>

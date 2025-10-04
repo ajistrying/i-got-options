@@ -51,6 +51,7 @@
           @click="emit('open-journal')"
           variant="outline"
           icon="i-heroicons-document-text"
+          class="cursor-pointer"
         >
           Journal
         </UButton>
