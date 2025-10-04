@@ -10,6 +10,13 @@
         :newsDataTime="newsDataTime"
         :fundamentalsDataTime="fundamentalsDataTime"
         @refresh="handleRefresh"
+        @open-journal="journalDrawerOpen = true"
+      />
+
+      <!-- Journal Drawer -->
+      <TickerWorkbenchJournal
+        :ticker="ticker"
+        v-model:open="journalDrawerOpen"
       />
 
       <!-- Loading State -->
@@ -86,6 +93,7 @@ const statistics = ref<any>({});
 const searchMetadata = ref<any>({});
 const dataSourceTimestamps = ref<any>({});
 const selectedTab = ref('media'); // Use value instead of index
+const journalDrawerOpen = ref(false);
 
 const tabs = [
   {
