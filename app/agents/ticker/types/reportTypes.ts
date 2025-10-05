@@ -1,46 +1,10 @@
 import { z } from 'zod';
 
 // ============================================================================
-// TIER 1: DATA ANALYSIS AGENT OUTPUT SCHEMAS
+// TIER 1: QUALITATIVE DATA ANALYSIS AGENT OUTPUT SCHEMAS
 // ============================================================================
-
-// Fundamental Analysis Output
-export const FundamentalAnalysisOutput = z.object({
-    financial_health_score: z.number().min(1).max(10).describe('Overall financial health (1-10)'),
-    revenue_trend: z.enum(['accelerating', 'growing', 'stable', 'declining']).describe('Revenue growth trajectory'),
-    profitability_assessment: z.string().describe('Profit margins, ROE, ROA analysis'),
-    balance_sheet_strength: z.string().describe('Debt levels, liquidity, asset quality'),
-    cash_flow_analysis: z.string().describe('Operating cash flow, free cash flow trends'),
-    key_metrics: z.object({
-        pe_ratio: z.number().nullable(),
-        price_to_book: z.number().nullable(),
-        debt_to_equity: z.number().nullable(),
-        current_ratio: z.number().nullable(),
-        roe: z.number().nullable(),
-    }),
-    notable_trends: z.array(z.string()).describe('Key trends from 5-year data'),
-});
-
-// Ratios Analysis Output
-export const RatiosAnalysisOutput = z.object({
-    credit_health: z.object({
-        score: z.number().min(1).max(10).describe('Credit strength (1-10)'),
-        trend: z.enum(['improving', 'stable', 'deteriorating']),
-        key_insights: z.array(z.string()),
-    }),
-    liquidity_health: z.object({
-        score: z.number().min(1).max(10).describe('Liquidity strength (1-10)'),
-        altman_z_score: z.number().nullable().describe('Bankruptcy risk indicator'),
-        trend: z.enum(['improving', 'stable', 'deteriorating']),
-        key_insights: z.array(z.string()),
-    }),
-    yield_analysis: z.object({
-        score: z.number().min(1).max(10).describe('Yield attractiveness (1-10)'),
-        shareholder_return_quality: z.string().describe('FCF yield, buybacks, dividends'),
-        key_insights: z.array(z.string()),
-    }),
-    overall_assessment: z.string().describe('Integrated view of all ratios'),
-});
+// Focus: Text-based intelligence gathering, narrative analysis, sentiment extraction
+// Excludes: Numerical calculations, financial metrics, quantitative valuations
 
 // Earnings Transcript Analysis Output
 export const EarningsAnalysisOutput = z.object({
@@ -51,7 +15,7 @@ export const EarningsAnalysisOutput = z.object({
     }),
     forward_guidance: z.object({
         direction: z.enum(['raised', 'maintained', 'lowered', 'not_provided']),
-        specifics: z.string().describe('Detailed guidance notes'),
+        specifics: z.string().describe('Detailed guidance notes (qualitative description)'),
         credibility: z.enum(['high', 'medium', 'low']).describe('Based on historical accuracy'),
     }),
     concerns_raised: z.array(z.string()).describe('Risks, headwinds, challenges mentioned'),
@@ -77,48 +41,28 @@ export const NewsSentimentOutput = z.object({
     controversy_flags: z.array(z.string()).describe('Negative news or scandals'),
 });
 
-// Technical Analysis Output
-export const TechnicalAnalysisOutput = z.object({
-    trend_analysis: z.object({
-        primary_trend: z.enum(['strong_uptrend', 'uptrend', 'sideways', 'downtrend', 'strong_downtrend']),
-        trend_strength: z.number().min(1).max(10).describe('Conviction in trend (1-10)'),
-        timeframe: z.enum(['short_term', 'intermediate', 'long_term']).describe('Trend horizon'),
-    }),
-    support_resistance: z.object({
-        key_support_levels: z.array(z.number()).describe('Major support price levels'),
-        key_resistance_levels: z.array(z.number()).describe('Major resistance price levels'),
-        current_price_position: z.string().describe('Where price sits relative to levels'),
-    }),
-    momentum_indicators: z.object({
-        rsi: z.number().min(0).max(100).nullable().describe('Relative Strength Index'),
-        macd_signal: z.enum(['bullish', 'neutral', 'bearish']).describe('MACD indicator'),
-        volume_trend: z.enum(['increasing', 'stable', 'decreasing']),
-    }),
-    chart_patterns: z.array(z.string()).describe('Notable patterns identified'),
-    technical_summary: z.string().describe('Overall technical picture'),
-});
-
 // ============================================================================
 // TIER 2: SYNTHESIS AGENT OUTPUT SCHEMAS
 // ============================================================================
+// Focus: Qualitative argument construction, narrative synthesis, thematic analysis
 
 // Bull Case Output (used by bullCaseAgent)
 export const BullCaseOutput = z.object({
     short_term: z.object({
         timeframe: z.string().describe('e.g., "Next 1-3 months"'),
-        thesis: z.string().describe('Short-term bullish case'),
+        thesis: z.string().describe('Short-term bullish case (qualitative narrative)'),
         key_drivers: z.array(z.string()).describe('Catalysts and factors'),
         confidence: z.number().min(1).max(10).describe('Conviction level (1-10)'),
     }),
     mid_term: z.object({
         timeframe: z.string().describe('e.g., "Next 6-12 months"'),
-        thesis: z.string().describe('Mid-term bullish case'),
+        thesis: z.string().describe('Mid-term bullish case (qualitative narrative)'),
         key_drivers: z.array(z.string()).describe('Catalysts and factors'),
         confidence: z.number().min(1).max(10).describe('Conviction level (1-10)'),
     }),
     long_term: z.object({
         timeframe: z.string().describe('e.g., "Next 2-5 years"'),
-        thesis: z.string().describe('Long-term bullish case'),
+        thesis: z.string().describe('Long-term bullish case (qualitative narrative)'),
         key_drivers: z.array(z.string()).describe('Catalysts and factors'),
         confidence: z.number().min(1).max(10).describe('Conviction level (1-10)'),
     }),
@@ -129,19 +73,19 @@ export const BullCaseOutput = z.object({
 export const BearCaseOutput = z.object({
     short_term: z.object({
         timeframe: z.string().describe('e.g., "Next 1-3 months"'),
-        thesis: z.string().describe('Short-term bearish case'),
+        thesis: z.string().describe('Short-term bearish case (qualitative narrative)'),
         key_risks: z.array(z.string()).describe('Risks and headwinds'),
         severity: z.number().min(1).max(10).describe('Risk severity (1-10)'),
     }),
     mid_term: z.object({
         timeframe: z.string().describe('e.g., "Next 6-12 months"'),
-        thesis: z.string().describe('Mid-term bearish case'),
+        thesis: z.string().describe('Mid-term bearish case (qualitative narrative)'),
         key_risks: z.array(z.string()).describe('Risks and headwinds'),
         severity: z.number().min(1).max(10).describe('Risk severity (1-10)'),
     }),
     long_term: z.object({
         timeframe: z.string().describe('e.g., "Next 2-5 years"'),
-        thesis: z.string().describe('Long-term bearish case'),
+        thesis: z.string().describe('Long-term bearish case (qualitative narrative)'),
         key_risks: z.array(z.string()).describe('Risks and headwinds'),
         severity: z.number().min(1).max(10).describe('Risk severity (1-10)'),
     }),
@@ -188,41 +132,21 @@ export const RisksOutput = z.object({
     risk_score: z.number().min(1).max(10).describe('Overall risk level (1=low, 10=critical)'),
 });
 
-// Valuation Output (used by valuationAgent)
-export const ValuationOutput = z.object({
-    fair_value_range: z.object({
-        low: z.number().describe('Conservative fair value estimate'),
-        base: z.number().describe('Base case fair value estimate'),
-        high: z.number().describe('Optimistic fair value estimate'),
-    }),
-    current_price: z.number(),
-    valuation_assessment: z.enum(['significantly_undervalued', 'undervalued', 'fairly_valued', 'overvalued', 'significantly_overvalued']),
-    upside_potential: z.number().describe('Percentage upside to base fair value'),
-    downside_risk: z.number().describe('Percentage downside from current price'),
-    position_sizing: z.object({
-        recommended_allocation: z.enum(['large', 'medium', 'small', 'none']).describe('Position size recommendation'),
-        reasoning: z.string().describe('Why this allocation'),
-        risk_reward_ratio: z.number().describe('Expected return vs. risk'),
-        max_portfolio_weight: z.number().describe('Maximum recommended portfolio percentage'),
-    }),
-    valuation_multiples_summary: z.string().describe('P/E, P/B, EV/EBITDA context vs peers/historical'),
-});
-
 // ============================================================================
-// TIER 3: FINAL COMPREHENSIVE REPORT SCHEMA
+// TIER 3: FINAL QUALITATIVE INTELLIGENCE REPORT SCHEMA
 // ============================================================================
 
-export const ComprehensiveDueDiligenceReport = z.object({
+export const QualitativeDueDiligenceReport = z.object({
     ticker: z.string(),
     company_name: z.string(),
     generated_at: z.string().describe('ISO timestamp of report generation'),
 
     // Executive Summary
     executive_summary: z.object({
-        company_overview: z.string().describe('What the company does'),
-        investment_thesis: z.string().describe('One-paragraph summary of opportunity'),
-        overall_recommendation: z.enum(['strong_buy', 'buy', 'hold', 'sell', 'strong_sell']),
-        conviction_level: z.number().min(1).max(10).describe('Overall confidence (1-10)'),
+        company_overview: z.string().describe('What the company does (narrative description)'),
+        investment_thesis: z.string().describe('One-paragraph qualitative summary of the opportunity'),
+        overall_sentiment: z.enum(['strong_conviction', 'conviction', 'neutral', 'skeptical', 'strong_skeptical']).describe('Qualitative assessment based on narrative analysis'),
+        conviction_level: z.number().min(1).max(10).describe('Overall confidence in the narrative (1-10)'),
         tldr: z.string().describe('2-3 sentence summary for quick reference'),
     }),
 
@@ -231,20 +155,30 @@ export const ComprehensiveDueDiligenceReport = z.object({
     bear_case: BearCaseOutput,
     catalysts: CatalystsOutput,
     risks: RisksOutput,
-    valuation: ValuationOutput,
 
-    // Supporting Data Summaries
-    fundamental_summary: z.string().describe('Key fundamental highlights'),
-    technical_summary: z.string().describe('Key technical highlights'),
-    sentiment_summary: z.string().describe('News and social sentiment overview'),
+    // Supporting Intelligence Summaries
+    management_intelligence: z.object({
+        summary: z.string().describe('Key insights from earnings calls'),
+        credibility_assessment: z.string().describe('How trustworthy is management based on tone and track record'),
+        key_quotes: z.array(z.string()).describe('Most revealing management statements'),
+    }),
+    news_intelligence: z.object({
+        summary: z.string().describe('Key narratives from news coverage'),
+        narrative_shifts: z.array(z.string()).describe('How the story is changing over time'),
+        media_sentiment: z.string().describe('Overall media perception'),
+    }),
+    social_intelligence: z.object({
+        summary: z.string().describe('Key insights from social media (Reddit)'),
+        crowd_positioning: z.string().describe('What is the retail crowd doing/thinking'),
+        contrarian_signals: z.array(z.string()).describe('Signs of over-optimism or over-pessimism'),
+    }),
 
     // Data Quality Indicators
     data_quality: z.object({
-        fundamental_data_available: z.boolean(),
         earnings_transcripts_available: z.boolean(),
         news_coverage_quality: z.enum(['excellent', 'good', 'fair', 'limited']),
         social_sentiment_quality: z.enum(['excellent', 'good', 'fair', 'limited']),
-        analysis_completeness: z.number().min(0).max(100).describe('Percentage of data sources available'),
+        analysis_completeness: z.number().min(0).max(100).describe('Percentage of qualitative data sources available'),
     }),
 
     // Metadata
@@ -256,14 +190,10 @@ export const ComprehensiveDueDiligenceReport = z.object({
 });
 
 // Export types for TypeScript usage
-export type FundamentalAnalysisOutput = z.infer<typeof FundamentalAnalysisOutput>;
-export type RatiosAnalysisOutput = z.infer<typeof RatiosAnalysisOutput>;
 export type EarningsAnalysisOutput = z.infer<typeof EarningsAnalysisOutput>;
 export type NewsSentimentOutput = z.infer<typeof NewsSentimentOutput>;
-export type TechnicalAnalysisOutput = z.infer<typeof TechnicalAnalysisOutput>;
 export type BullCaseOutput = z.infer<typeof BullCaseOutput>;
 export type BearCaseOutput = z.infer<typeof BearCaseOutput>;
 export type CatalystsOutput = z.infer<typeof CatalystsOutput>;
 export type RisksOutput = z.infer<typeof RisksOutput>;
-export type ValuationOutput = z.infer<typeof ValuationOutput>;
-export type ComprehensiveDueDiligenceReport = z.infer<typeof ComprehensiveDueDiligenceReport>;
+export type QualitativeDueDiligenceReport = z.infer<typeof QualitativeDueDiligenceReport>;

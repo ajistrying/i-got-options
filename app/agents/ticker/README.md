@@ -1,101 +1,147 @@
-# Investment Due Diligence Agentic System
+# Qualitative Investment Intelligence Agentic System
 
-A multi-tiered agentic framework built with OpenAI Agents SDK for TypeScript to generate comprehensive investment research reports.
+A multi-tiered agentic framework built with OpenAI Agents SDK for TypeScript to generate **qualitative, narrative-driven** investment research reports.
+
+## Philosophy: Text-Based Intelligence, Not Numbers
+
+This system focuses exclusively on **qualitative analysis** - extracting intelligence from text sources rather than crunching numbers. We trust LLMs with:
+- ✅ Sentiment extraction and tone analysis
+- ✅ Narrative identification and theme synthesis
+- ✅ Textual pattern recognition
+- ✅ Qualitative argument construction
+
+We **do NOT** use LLMs for:
+- ❌ Financial statement calculations
+- ❌ Ratio analysis and metrics
+- ❌ Technical chart analysis
+- ❌ Valuation modeling and price targets
+
+**Why?** LLMs excel at understanding "what people are saying" but can hallucinate numbers. This system leverages their strengths while avoiding their weaknesses.
 
 ## Architecture Overview
 
-The system uses a hierarchical agent structure with three operational tiers plus future expansion agents:
+The system uses a hierarchical agent structure with three operational tiers:
 
-### Tier 1: Data Analysis Agents (Specialists)
-Individual specialist agents that analyze specific data types:
+### Tier 1: Qualitative Data Analysis Agents (4 specialists)
+Text analysis specialists that extract intelligence from specific sources:
 
-1. **fundamentalAnalysisAgent.ts** - Analyzes financial statements (balance sheets, income statements, cash flows)
-2. **ratiosAnalysisAgent.ts** - Analyzes financial ratios (credit, liquidity, yield metrics)
-3. **earningsAgent.ts** - Analyzes earnings call transcripts for management sentiment and guidance
-4. **newsSentimentAgent.ts** - Analyzes news articles for sentiment and narratives
-5. **redditAgent.ts** - Analyzes Reddit posts for social sentiment and trading intelligence
-6. **technicalAnalysisAgent.ts** - Analyzes price action, support/resistance, momentum indicators
-7. **baseInfoAgent.ts** - Creates company overview summaries
+1. **earningsAgent.ts** - Analyzes earnings call transcripts for:
+   - Management sentiment (tone, confidence level, key themes)
+   - Forward guidance direction (raised/maintained/lowered)
+   - Concerns raised vs. opportunities highlighted
+   - Analyst question themes
+   - Transcript narrative summary
 
-### Tier 2: Synthesis Agents (Analysts)
-Agents that synthesize Tier 1 outputs into specific viewpoints:
+2. **newsSentimentAgent.ts** - Analyzes news articles for:
+   - Overall sentiment score and trend
+   - Key narratives and themes
+   - Recent developments
+   - Media coverage quality
+   - Controversy flags
 
-8. **bullCaseAgent.ts** - Builds comprehensive bull thesis across short/mid/long-term timeframes
-9. **bearCaseAgent.ts** - Builds comprehensive bear thesis across short/mid/long-term timeframes
-10. **catalystsAgent.ts** - Identifies upcoming catalysts and trigger events
-11. **risksAgent.ts** - Catalogs and assesses risk factors across categories
-12. **valuationAgent.ts** - Determines fair value and position sizing recommendations
+3. **redditAgent.ts** - Analyzes Reddit posts/comments for:
+   - Social sentiment metrics
+   - Consensus expectations
+   - Crowd positioning and behavioral patterns
+   - Contrarian indicators
+   - High-value retail intelligence
 
-### Tier 3: Orchestrator Agent (Chief Analyst)
-13. **dueDiligenceOrchestratorAgent.ts** - Coordinates all agents and generates final comprehensive report
+4. **baseInfoAgent.ts** - Creates company overview (narrative description)
 
-### Tier 4: Future Agents (Stubs)
-Placeholder agents for future data integration:
+### Tier 2: Synthesis Agents (4 analysts)
+Agents that synthesize Tier 1 qualitative outputs into strategic viewpoints:
 
-- **optionsFlowAgent.ts** - Unusual options activity analysis
-- **institutionalActivityAgent.ts** - 13F filings and institutional holdings changes
-- **insiderTradingAgent.ts** - Insider buying/selling patterns
-- **competitiveAnalysisAgent.ts** - Competitor comparison and market positioning
-- **economicDataAgent.ts** - Macroeconomic indicators and impact analysis
-- **secFilingsAgent.ts** - SEC regulatory filings and legal disclosures
+5. **bullCaseAgent.ts** - Builds qualitative bull case across short/mid/long-term timeframes
+6. **bearCaseAgent.ts** - Builds qualitative bear case across short/mid/long-term timeframes
+7. **catalystsAgent.ts** - Identifies upcoming events and catalysts from text sources
+8. **risksAgent.ts** - Categorizes and assesses qualitative risk factors
+
+### Tier 3: Orchestrator Agent (Chief Qualitative Analyst)
+9. **dueDiligenceOrchestratorAgent.ts** - Coordinates all agents and generates final qualitative intelligence report
 
 ## Type Definitions
 
-**types/reportTypes.ts** - Comprehensive Zod schemas defining:
-- Individual agent output structures
-- Final comprehensive report schema
-- Type exports for TypeScript usage
+**types/reportTypes.ts** - Qualitative-focused Zod schemas:
+- `EarningsAnalysisOutput` - Management sentiment and guidance
+- `NewsSentimentOutput` - News narratives and media perception
+- `BullCaseOutput` - Qualitative bull arguments
+- `BearCaseOutput` - Qualitative bear arguments
+- `CatalystsOutput` - Event identification
+- `RisksOutput` - Risk categorization
+- `QualitativeDueDiligenceReport` - Final report structure
 
 ## Data Flow
 
 ```
-Raw Data Sources (Supabase)
+Text Data Sources (Supabase)
     ↓
-Tier 1: Data Analysis Agents
+Tier 1: Qualitative Data Analysis Agents
     ↓
 Tier 2: Synthesis Agents
     ↓
 Tier 3: Orchestrator Agent
     ↓
-Comprehensive Due Diligence Report
+Qualitative Intelligence Report
 ```
 
 ## Current Data Sources
 
-The system currently integrates with:
+The system integrates with **text-based** data:
 
-1. **EODHD API** - Fundamental financial data, news articles
-2. **roic.ai API** - Earnings call transcripts, financial ratios
-3. **Reddit API** - Social sentiment from favorite subreddits
-4. **Supabase** - Data storage and retrieval
+1. **Earnings Call Transcripts** (roic.ai)
+   - Management commentary
+   - Q&A sessions
+   - Guidance statements
 
-All data is stored in the `ticker_searches` and `earnings_call_transcripts` tables.
+2. **News Articles** (EODHD API)
+   - News headlines and content
+   - Article sentiment scores
+   - Media coverage
+
+3. **Reddit Posts/Comments** (Reddit API)
+   - Post titles and content
+   - Comment discussions
+   - User sentiment
+
+All data stored in Supabase (`ticker_searches` and `earnings_call_transcripts` tables).
 
 ## Report Structure
 
-The final `ComprehensiveDueDiligenceReport` includes:
+The final `QualitativeDueDiligenceReport` includes:
 
 ### Executive Summary
-- Company overview
-- Investment thesis (one paragraph)
-- Overall recommendation (Strong Buy/Buy/Hold/Sell/Strong Sell)
-- Conviction level (1-10)
-- TL;DR (2-3 sentences)
+- **Company overview** - Narrative description of what the company does
+- **Investment thesis** - One-paragraph qualitative summary
+- **Overall sentiment** - Strong Conviction | Conviction | Neutral | Skeptical | Strong Skeptical
+- **Conviction level** - Confidence in the narrative assessment (1-10)
+- **TL;DR** - 2-3 sentence summary
 
 ### Core Analysis Sections
-- **Bull Case** - Short/mid/long-term bullish thesis with key drivers and confidence levels
-- **Bear Case** - Short/mid/long-term bearish thesis with risks and severity levels
-- **Catalysts** - Upcoming events that could move the stock
-- **Risks** - Categorized risks (financial, operational, market, regulatory/legal)
-- **Valuation** - Fair value range, upside/downside, position sizing recommendation
+- **Bull Case** - Qualitative bullish arguments (short/mid/long-term)
+- **Bear Case** - Qualitative bearish arguments (short/mid/long-term)
+- **Catalysts** - Upcoming events identified from text sources
+- **Risks** - Categorized qualitative risks (financial, operational, market, regulatory)
 
-### Supporting Summaries
-- Fundamental summary
-- Technical summary
-- Sentiment summary
+### Supporting Intelligence
+- **Management Intelligence**
+  - Key insights from earnings calls
+  - Credibility assessment
+  - Most revealing quotes
+
+- **News Intelligence**
+  - Key narratives from media
+  - Narrative shifts over time
+  - Overall media perception
+
+- **Social Intelligence**
+  - Key insights from Reddit
+  - Crowd positioning
+  - Contrarian signals
 
 ### Data Quality Indicators
-- Data availability flags
+- Earnings transcripts availability
+- News coverage quality
+- Social sentiment quality
 - Analysis completeness percentage
 - Warnings and limitations
 
@@ -103,31 +149,13 @@ The final `ComprehensiveDueDiligenceReport` includes:
 
 **POST /api/ticker/[ticker]/report**
 
-Triggers report generation for a given ticker.
+Triggers qualitative intelligence report generation for a given ticker.
 
-### Current Status
-The endpoint structure is created but implementation is pending:
-- TODO: Implement Supabase data fetching
-- TODO: Structure data payload for orchestrator agent
-- TODO: Execute dueDiligenceOrchestratorAgent
-- TODO: Handle errors and partial data scenarios
-- TODO: Store generated reports for caching
-- TODO: Add rate limiting and cost controls
-
-## Usage (Once Implemented)
-
-```typescript
-// Frontend/client code
-const response = await $fetch(`/api/ticker/AAPL/report`, {
-    method: 'POST',
-});
-
-// response.report will contain ComprehensiveDueDiligenceReport
-const report = response.report;
-console.log(report.executive_summary.overall_recommendation); // "Strong Buy"
-console.log(report.valuation.fair_value_range.base); // 175.50
-console.log(report.bull_case.overall_bull_score); // 8
-```
+### Implementation Status
+- ✅ Endpoint structure created
+- ⏳ Data fetching from Supabase (TODO)
+- ⏳ Agent execution pipeline (TODO)
+- ⏳ Report caching (TODO)
 
 ## Agent Coordination (OpenAI Agents SDK)
 
@@ -135,99 +163,107 @@ The orchestrator uses the **handoffs** pattern:
 
 ```typescript
 export const dueDiligenceOrchestratorAgent = new Agent({
-    name: 'DueDiligenceOrchestratorAgent',
+    name: 'QualitativeDueDiligenceOrchestratorAgent',
     instructions: prompt,
-    outputType: ComprehensiveDueDiligenceReport,
+    outputType: QualitativeDueDiligenceReport,
     handoffs: [
-        // Tier 1 agents
-        fundamentalAnalysisAgent,
-        ratiosAnalysisAgent,
-        // ... etc
+        // Tier 1 text analysts
+        earningsAgent,
+        newsSentimentAgent,
+        redditAgent,
+        baseInfoAgent,
 
-        // Tier 2 agents
+        // Tier 2 synthesis analysts
         bullCaseAgent,
         bearCaseAgent,
-        // ... etc
+        catalystsAgent,
+        risksAgent,
     ],
 });
 ```
 
-The orchestrator can delegate to specialist agents and synthesize their outputs into the final report.
+The orchestrator delegates to specialist agents and synthesizes their qualitative outputs into the final narrative intelligence report.
 
-## Future Expansion
+## What Makes This Different
 
-To add a new data source and agent:
+### Traditional Quant Analysis
+- Calculates financial ratios
+- Models cash flows
+- Derives price targets
+- **Risk**: LLM hallucination with numbers
 
-1. **Add data source integration**
-   - Create API endpoint in `/server/api/`
-   - Add database migration if storing data
-   - Update data pipeline composable
+### Our Qualitative Approach
+- Extracts management sentiment
+- Identifies narrative themes
+- Synthesizes "what people are saying"
+- **Advantage**: LLMs excel at text understanding
 
-2. **Create Tier 1 analysis agent**
-   - Define output schema in `types/reportTypes.ts`
-   - Create agent file with prompt and logic
-   - Export agent for orchestrator
+### Example Outputs
 
-3. **Update orchestrator**
-   - Import new agent
-   - Add to handoffs array
-   - Update prompt to utilize new data
+**Traditional (Avoided):**
+```
+Fair value: $175 (P/E of 25x on $7.00 EPS)
+Upside: 15.8%
+Position size: 10% of portfolio
+```
 
-4. **Update Tier 2 agents (if needed)**
-   - Modify synthesis agents to incorporate new insights
-   - Update prompts to reference new data source
+**Qualitative (Our Focus):**
+```
+Bull Case: Management expressing high confidence in new
+product cycle. Media narratives increasingly positive around
+innovation leadership. Reddit crowd showing quality discussion
+with insider observations supporting growth thesis.
 
-5. **Update final report schema (if needed)**
-   - Add new sections to `ComprehensiveDueDiligenceReport`
-   - Update orchestrator to populate new fields
+Bear Case: Analyst questions revealing concerns about macro
+headwinds. News coverage flagging competitive pressures.
+Management hedging language around guidance suggests uncertainty.
+```
 
 ## Development Notes
 
 ### Best Practices
-- Keep agent prompts detailed and specific
-- Define strict Zod schemas for structured output
-- Handle missing data gracefully
-- Log agent execution for debugging
-- Version control prompts (they're critical IP)
+- Keep agent prompts focused on qualitative extraction
+- Explicitly instruct agents to avoid numerical predictions
+- Emphasize narrative quality and source credibility
+- Cross-reference text sources for consistency
 
 ### Testing Strategy
-- Unit test individual agents with sample data
-- Integration test full pipeline with real ticker
-- Monitor token usage and costs
-- Validate output schema compliance
-- Review agent outputs for hallucinations
+- Validate that agents don't hallucinate numbers
+- Check narrative consistency across sources
+- Verify sentiment assessments match text evidence
+- Review for qualitative depth vs. quantitative claims
 
 ### Cost Considerations
-- Each report generation calls multiple LLM agents
-- Use caching to avoid regenerating recent reports
-- Consider rate limiting per user
-- Monitor OpenAI API costs closely
-- Potentially use cheaper models for some agents (e.g., GPT-4-mini for data extraction)
-
-### Performance Optimization
-- Agents can potentially run in parallel (Tier 1 agents are independent)
-- Cache frequently requested ticker reports
-- Lazy-load Tier 4 agents only when data available
-- Stream results progressively to user if possible
+- Text analysis is token-intensive (especially transcripts)
+- Cache reports to avoid regeneration
+- Consider using GPT-4-mini for simpler extraction tasks
+- Monitor costs closely for long transcripts
 
 ## Known Limitations
 
-1. **Data Dependency**: Report quality depends on data availability in Supabase
-2. **Real-time Data**: Currently uses stored data, not real-time market data
-3. **API Costs**: Multiple LLM calls per report can be expensive at scale
-4. **Execution Time**: Full report generation may take 30-60 seconds
-5. **Hallucination Risk**: LLM agents may occasionally generate plausible but incorrect analysis
+1. **No Quantitative Validation**: Report doesn't include numerical analysis to cross-check narratives
+2. **Sentiment Can Be Wrong**: Crowd/media can be overly optimistic or pessimistic
+3. **Text Data Dependency**: Quality depends on availability of earnings transcripts, news, and Reddit discussions
+4. **Execution Time**: Analyzing long transcripts may take 30-60 seconds
+5. **LLM Bias**: Language models may have inherent biases in sentiment interpretation
 
 ## Roadmap
 
 - [ ] Implement data fetching in report endpoint
-- [ ] Add report caching layer
-- [ ] Implement Tier 4 agents as data sources become available
-- [ ] Add streaming responses for progressive report loading
-- [ ] Create UI for displaying reports
-- [ ] Add report versioning and historical comparison
+- [ ] Add report caching layer (24-hour TTL)
+- [ ] Create UI for displaying qualitative intelligence reports
+- [ ] Add historical narrative tracking (how stories change over time)
 - [ ] Implement A/B testing of agent prompts
-- [ ] Add user feedback loop to improve agent quality
+- [ ] Add user feedback loop for narrative quality
+- [ ] Consider adding quantitative data display (user-provided, not LLM-calculated)
+
+## When to Add Quantitative Analysis Back
+
+If you later want to incorporate numbers:
+1. **Display raw data** (not LLM-calculated) in UI
+2. **User can see numbers** alongside qualitative narrative
+3. **LLM describes trends** without calculating
+4. **Example**: "Revenue grew (see chart)" not "Revenue grew 23.5%"
 
 ## License
 
