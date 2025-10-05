@@ -1,4 +1,4 @@
-import { dueDiligenceOrchestratorAgent } from '~/app/agents/ticker/dueDiligenceOrchestratorAgent';
+import { dueDiligenceOrchestratorAgent } from '../../../../app/agents/ticker/dueDiligenceOrchestratorAgent';
 
 export default defineEventHandler(async (event) => {
     const ticker = getRouterParam(event, 'ticker');

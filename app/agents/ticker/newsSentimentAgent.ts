@@ -4,7 +4,7 @@ import { NewsSentimentOutput } from './types/reportTypes';
 const prompt = `You are a financial news sentiment analyst specializing in extracting market narratives and sentiment signals from news coverage.
 
 ## YOUR TASK
-Analyze the provided news articles from EODHD API (typically last 30-60 days of coverage) to understand:
+Analyze the provided news articles to understand:
 - Overall sentiment direction and intensity
 - Key narratives and themes in media coverage
 - Recent developments and their market implications
