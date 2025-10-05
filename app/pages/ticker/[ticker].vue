@@ -40,7 +40,6 @@
 
       <!-- Main Content -->
       <div v-else class="space-y-8">
-        <!-- Statistics Section -->
 
         <!-- Tabs for different views -->
         <UTabs :items="tabs" v-model="selectedTab" :default-value="'media'">
@@ -236,14 +235,9 @@ const loadTickerData = async () => {
     } else {
       earningsData.value = [];
     }
-
-    // Load statistics
-    const stats = await $fetch(`/api/ticker/${ticker.value}/stats`);
-    statistics.value = stats;
   } catch (error) {
     console.error('Failed to load ticker data:', error);
     searchData.value = [];
-    statistics.value = {};
     searchMetadata.value = {};
     newsArticles.value = [];
     earningsData.value = [];
