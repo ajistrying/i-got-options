@@ -42,20 +42,25 @@ export default defineEventHandler(async (event) => {
             });
         }
 
-        // Map the transcripts to their year-quarter keys
+        // Map the transcripts and summaries to their year-quarter keys
         const transcriptsMap: Record<string, any> = {};
+        const summariesMap: Record<string, any> = {};
 
         if (existingTranscripts) {
             existingTranscripts.forEach(transcript => {
                 const key = `${transcript.year}-${transcript.quarter}`;
                 transcriptsMap[key] = transcript.transcript_data;
+                if (transcript.ai_summary) {
+                    summariesMap[key] = transcript.ai_summary;
+                }
             });
         }
 
         return {
             success: true,
             ticker: ticker.toUpperCase(),
-            transcripts: transcriptsMap
+            transcripts: transcriptsMap,
+            summaries: summariesMap
         };
 
     } catch (error: any) {
