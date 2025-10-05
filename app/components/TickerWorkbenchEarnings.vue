@@ -68,8 +68,9 @@
                     variant="ghost"
                     icon="i-heroicons-sparkles"
                     @click.stop="generateSummary(earning)"
+                    :loading="isLoadingSummary(earning)"
                   >
-                    AI Summary
+                    {{ hasSummary(earning) ? 'Regenerate Summary' : 'Generate Summary' }}
                   </UButton>
                   <UButton
                     size="xs"
@@ -113,6 +114,96 @@
                 </UButton>
               </div>
             </div>
+
+            <!-- AI Summary Section - Show if summary exists -->
+            <div v-if="hasSummary(earning)" class="mt-6">
+              <button
+                @click="toggleSummary(earning)"
+                class="w-full flex items-center justify-between p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border border-blue-200 dark:border-gray-700 rounded-lg hover:from-blue-100 hover:to-indigo-100 dark:hover:from-gray-700 dark:hover:to-gray-800 transition-colors"
+              >
+                <div class="flex items-center space-x-3">
+                  <UIcon
+                    :name="isSummaryExpanded(earning) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
+                    class="text-lg"
+                  />
+                  <UIcon name="i-heroicons-sparkles" class="text-lg text-blue-600 dark:text-blue-400" />
+                  <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">
+                    AI Summary
+                  </h4>
+                </div>
+              </button>
+
+              <!-- Summary Content (Toggleable) -->
+              <div
+                v-if="isSummaryExpanded(earning)"
+                class="mt-2 p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+              >
+                <div v-if="getSummary(earning)" class="space-y-4 text-sm">
+                  <!-- Positives -->
+                  <div v-if="getSummary(earning).positives?.length > 0">
+                    <h5 class="font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center">
+                      <UIcon name="i-heroicons-arrow-trending-up" class="mr-2" />
+                      Key Positives
+                    </h5>
+                    <div class="text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none" v-html="renderMarkdown(getSummary(earning).positives)" />
+                  </div>
+
+                  <!-- Negatives -->
+                  <div v-if="getSummary(earning).negatives?.length > 0">
+                    <h5 class="font-semibold text-red-700 dark:text-red-400 mb-2 flex items-center">
+                      <UIcon name="i-heroicons-arrow-trending-down" class="mr-2" />
+                      Key Challenges
+                    </h5>
+                    <div class="text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none" v-html="renderMarkdown(getSummary(earning).negatives)" />
+                  </div>
+
+                  <!-- Short-term Impacts -->
+                  <div v-if="getSummary(earning).shortTermImpacts?.length > 0">
+                    <h5 class="font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center">
+                      <UIcon name="i-heroicons-clock" class="mr-2" />
+                      Short-term Impacts (1-3 quarters)
+                    </h5>
+                    <div class="text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none" v-html="renderMarkdown(getSummary(earning).shortTermImpacts)" />
+                  </div>
+
+                  <!-- Medium-term Impacts -->
+                  <div v-if="getSummary(earning).mediumTermImpacts?.length > 0">
+                    <h5 class="font-semibold text-purple-700 dark:text-purple-400 mb-2 flex items-center">
+                      <UIcon name="i-heroicons-calendar" class="mr-2" />
+                      Medium-term Impacts (1-2 years)
+                    </h5>
+                    <div class="text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none" v-html="renderMarkdown(getSummary(earning).mediumTermImpacts)" />
+                  </div>
+
+                  <!-- Long-term Impacts -->
+                  <div v-if="getSummary(earning).longTermImpacts?.length > 0">
+                    <h5 class="font-semibold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center">
+                      <UIcon name="i-heroicons-chart-bar" class="mr-2" />
+                      Long-term Impacts (2+ years)
+                    </h5>
+                    <div class="text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none" v-html="renderMarkdown(getSummary(earning).longTermImpacts)" />
+                  </div>
+
+                  <!-- Management Commentary -->
+                  <div v-if="getSummary(earning).managementCommentary?.length > 0">
+                    <h5 class="font-semibold text-amber-700 dark:text-amber-400 mb-2 flex items-center">
+                      <UIcon name="i-heroicons-chat-bubble-left-right" class="mr-2" />
+                      Notable Management Commentary
+                    </h5>
+                    <div class="text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none" v-html="renderMarkdown(getSummary(earning).managementCommentary)" />
+                  </div>
+
+                  <!-- Market Context -->
+                  <div v-if="getSummary(earning).marketContext">
+                    <h5 class="font-semibold text-teal-700 dark:text-teal-400 mb-2 flex items-center">
+                      <UIcon name="i-heroicons-globe-alt" class="mr-2" />
+                      Market Context
+                    </h5>
+                    <div class="text-gray-700 dark:text-gray-300 leading-relaxed prose prose-sm dark:prose-invert max-w-none" v-html="renderMarkdown(getSummary(earning).marketContext)" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </UCard>
       </TransitionGroup>
@@ -132,6 +223,8 @@
 </template>
 
 <script setup lang="ts">
+import { marked } from 'marked';
+
 const props = defineProps<{
   ticker: string;
   earnings: any[];
@@ -144,6 +237,11 @@ const emit = defineEmits(['refresh']);
 const loadingTranscripts = ref<Set<string>>(new Set());
 const transcripts = ref<Map<string, any>>(new Map());
 const expandedTranscripts = ref<Set<string>>(new Set());
+
+// State for AI summary loading and storage
+const loadingSummaries = ref<Set<string>>(new Set());
+const summaries = ref<Map<string, any>>(new Map());
+const expandedSummaries = ref<Set<string>>(new Set());
 
 // Check database for existing transcripts on load
 const checkExistingTranscripts = async () => {
@@ -158,6 +256,13 @@ const checkExistingTranscripts = async () => {
         transcripts.value.set(key, transcript);
       });
     }
+
+    if (response.success && response.summaries) {
+      Object.entries(response.summaries).forEach(([key, summary]) => {
+        summaries.value.set(key, summary);
+      });
+    }
+
   } catch (error) {
     console.error('Failed to check existing transcripts:', error);
   }
@@ -302,9 +407,67 @@ ${JSON.stringify(transcript, null, 2)}
   URL.revokeObjectURL(url);
 };
 
+// Check if summary is loading
+const isLoadingSummary = (earning: any) => {
+  return loadingSummaries.value.has(getEarningKey(earning));
+};
+
+// Check if summary exists
+const hasSummary = (earning: any) => {
+  const summary = summaries.value.has(getEarningKey(earning));
+  return summary;
+};
+
+// Get summary data
+const getSummary = (earning: any) => {
+  return summaries.value.get(getEarningKey(earning)) || null;
+};
+
+// Toggle summary expansion
+const toggleSummary = (earning: any) => {
+  const key = getEarningKey(earning);
+  expandedSummaries.value.has(key)
+    ? expandedSummaries.value.delete(key)
+    : expandedSummaries.value.add(key);
+};
+
+// Check if summary is expanded
+const isSummaryExpanded = (earning: any) => {
+  return expandedSummaries.value.has(getEarningKey(earning));
+};
+
+// Render markdown to HTML
+const renderMarkdown = (text: string) => {
+  if (!text) return '';
+  return marked.parse(text, {
+    async: false,
+    breaks: true,  // Convert single line breaks to <br>
+    gfm: true      // Enable GitHub Flavored Markdown
+  }) as string;
+};
+
 // Generate AI summary of transcript
-const generateSummary = (earning: any) => {
-  console.log('Generating Summary...');
+const generateSummary = async (earning: any) => {
+  const key = getEarningKey(earning);
+  if (loadingSummaries.value.has(key) || summaries.value.has(key)) return;
+
+  loadingSummaries.value.add(key);
+
+  try {
+    const response = await $fetch('/api/openai/summarizeEarningsCallTranscript', {
+      method: 'POST',
+      body: { ticker: props.ticker, year: earning.year, quarter: earning.quarter }
+    });
+
+    if (response.success && 'summary' in response && response.summary) {
+      summaries.value.set(key, response.summary);
+    }
+  } catch (error) {
+    console.error('Failed to generate summary:', error);
+    alert('Failed to generate AI summary. Please ensure the transcript is loaded and try again.');
+  } finally {
+    loadingSummaries.value.delete(key);
+  }
 };
 </script>
 
