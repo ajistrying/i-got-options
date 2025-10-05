@@ -1,4 +1,4 @@
-import { dueDiligenceOrchestratorAgent } from '../../../../app/agents/ticker/dueDiligenceOrchestratorAgent';
+import { QualitativeIntelligenceManager } from '../../../../app/agents/ticker/qualitativeIntelligenceManager';
 
 export default defineEventHandler(async (event) => {
     const ticker = getRouterParam(event, 'ticker');
@@ -11,80 +11,57 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        // TODO: Fetch all required data from Supabase
-        // This will need to query:
-        // 1. fundamental_data from ticker_searches table
-        // 2. credit_ratios_data, liquidity_ratios_data, yield_ratios_data
-        // 3. earnings_call_transcripts from earnings_call_transcripts table
-        // 4. news_data from ticker_searches table
-        // 5. search_data (Reddit) from ticker_searches table
+        const supabase = useSupabaseClient();
 
-        // For now, returning a placeholder response
-        // Once data fetching is implemented, the flow will be:
+        // Fetch ticker data
+        const { data: tickerData, error } = await supabase
+            .from('ticker_searches')
+            .select('*')
+            .eq('ticker', ticker.toUpperCase())
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
 
-        // const supabase = useSupabaseClient();
-        //
-        // // Fetch ticker data
-        // const { data: tickerData, error } = await supabase
-        //     .from('ticker_searches')
-        //     .select('*')
-        //     .eq('ticker', ticker.toUpperCase())
-        //     .order('created_at', { ascending: false })
-        //     .limit(1)
-        //     .single();
-        //
-        // if (error || !tickerData) {
-        //     throw createError({
-        //         statusCode: 404,
-        //         statusMessage: 'Ticker data not found. Run data pipeline first.',
+        if (error || !tickerData) {
+            throw createError({
+                statusCode: 404,
+                statusMessage: 'Ticker data not found. Run data pipeline first.',
+            });
+        }
+
+        // Fetch earnings transcripts
+        const { data: earningsData } = await supabase
+            .from('earnings_call_transcripts')
+            .select('*')
+            .eq('ticker', ticker.toUpperCase())
+            .order('year', { ascending: false })
+            .order('quarter', { ascending: false })
+            .limit(4); // Get last 4 quarters
+
+        // Prepare data payload for manager
+        const dataPayload = {
+            transcripts: earningsData || [],
+            newsArticles: tickerData.news_data || [],
+            redditPosts: tickerData.search_data || [],
+            companyInfo: tickerData.fundamental_data || {},
+        };
+
+        // Run the Qualitative Intelligence Manager
+        const manager = new QualitativeIntelligenceManager();
+        const report = await manager.run(ticker.toUpperCase(), dataPayload);
+
+        // TODO: Store generated report in database for caching
+        // const { error: insertError } = await supabase
+        //     .from('generated_reports')
+        //     .insert({
+        //         ticker: ticker.toUpperCase(),
+        //         report_data: report,
+        //         created_at: new Date().toISOString(),
         //     });
-        // }
-        //
-        // // Fetch earnings transcripts
-        // const { data: earningsData } = await supabase
-        //     .from('earnings_call_transcripts')
-        //     .select('*')
-        //     .eq('ticker', ticker.toUpperCase())
-        //     .order('year', { ascending: false })
-        //     .order('quarter', { ascending: false })
-        //     .limit(4); // Get last 4 quarters
-        //
-        // // Prepare context for orchestrator agent
-        // const analysisContext = {
-        //     ticker: ticker.toUpperCase(),
-        //     fundamentalData: tickerData.fundamental_data,
-        //     ratiosData: {
-        //         credit: tickerData.credit_ratios_data,
-        //         liquidity: tickerData.liquidity_ratios_data,
-        //         yield: tickerData.yield_ratios_data,
-        //     },
-        //     earningsTranscripts: earningsData || [],
-        //     newsData: tickerData.news_data,
-        //     redditData: tickerData.search_data,
-        // };
-        //
-        // // Run the orchestrator agent
-        // const report = await dueDiligenceOrchestratorAgent.run({
-        //     input: JSON.stringify(analysisContext),
-        // });
-        //
-        // return {
-        //     success: true,
-        //     report: report.output,
-        // };
 
-        // Placeholder response
         return {
-            success: false,
-            message: 'Report generation endpoint created. Data fetching and agent execution to be implemented.',
-            todo: [
-                'Implement Supabase data fetching for all required data sources',
-                'Structure data payload for orchestrator agent',
-                'Execute dueDiligenceOrchestratorAgent with proper context',
-                'Handle errors and partial data scenarios',
-                'Store generated reports in database for caching',
-                'Add rate limiting and cost controls for OpenAI API calls',
-            ],
+            success: true,
+            report,
         };
 
     } catch (error: any) {

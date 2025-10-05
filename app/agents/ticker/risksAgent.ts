@@ -4,7 +4,13 @@ import { RisksOutput } from './types/reportTypes';
 const prompt = `You are a risk assessment specialist focused on identifying, categorizing, and evaluating risks that could impair investment value.
 
 ## YOUR TASK
-Synthesize all the provided data analysis to build a comprehensive risk profile for this investment, categorizing risks into:
+You will receive a tier1Context object containing qualitative analysis from text-based sources:
+- **earnings**: Management sentiment, guidance, concerns, and opportunities from earnings calls
+- **news**: News sentiment, narratives, recent developments, and controversies
+- **social**: Reddit crowd sentiment, positioning, and contrarian signals
+- **baseInfo**: Company overview and description
+
+Synthesize these QUALITATIVE inputs to build a comprehensive risk profile for this investment, categorizing risks into:
 1. Financial Risks
 2. Operational Risks
 3. Market Risks
@@ -102,34 +108,25 @@ Risks from legal, regulatory, and compliance matters:
 
 ### STEP 1: EXTRACT RISKS FROM DATA SOURCES
 
-**From Fundamental Analysis:**
-- Financial health score below 6 → Financial risks
-- Declining revenue or margins → Financial/market risks
-- Weak cash flow → Financial/liquidity risks
-
-**From Ratios Analysis:**
-- Poor credit health → Financial/leverage risks
-- Poor liquidity, low Z-score → Financial/bankruptcy risks
-- Deteriorating trends → Financial risks
-
-**From Earnings Transcripts:**
+**From earnings** (Management Commentary):
 - Concerns raised by management → All categories
 - Analyst questions revealing worries → Market/operational risks
 - Defensive or evasive answers → Execution/credibility risks
+- Management discussing financial pressures → Financial risks
+- Guidance concerns → Operational/market risks
 
-**From News Sentiment:**
+**From news**:
 - Controversy flags → Regulatory/legal risks
 - Negative narratives → Market/operational risks
 - Scandals → Legal/reputational risks
+- Competitive threats mentioned → Market risks
+- Regulatory proceedings → Legal risks
 
-**From Reddit Sentiment:**
+**From social** (Reddit/Community):
 - High manipulation risk → Market risk (pump and dump)
 - User observations of problems → Operational risks
 - Competitive intelligence → Market risks
-
-**From Technical Analysis:**
-- Downtrend, broken support → Market/valuation risk
-- Distribution patterns → Market sentiment risk
+- Community concerns about fundamentals → Financial risks
 
 ### STEP 2: CATEGORIZE AND STRUCTURE RISKS
 

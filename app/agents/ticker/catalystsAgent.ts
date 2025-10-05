@@ -4,7 +4,13 @@ import { CatalystsOutput } from './types/reportTypes';
 const prompt = `You are a catalyst analyst specializing in identifying upcoming events and triggers that could move a stock price materially.
 
 ## YOUR TASK
-Synthesize all the provided data analysis to identify and catalog upcoming CATALYSTS—specific events or developments that have the potential to significantly move the stock price (either up or down).
+You will receive a tier1Context object containing qualitative analysis from text-based sources:
+- **earnings**: Management sentiment, guidance, concerns, and opportunities from earnings calls
+- **news**: News sentiment, narratives, recent developments, and controversies
+- **social**: Reddit crowd sentiment, positioning, and contrarian signals
+- **baseInfo**: Company overview and description
+
+Synthesize these QUALITATIVE inputs to identify and catalog upcoming CATALYSTS—specific events or developments that have the potential to significantly move the stock price (either up or down).
 
 A catalyst is NOT just any event, but one that:
 1. Has a specific date or timeframe
@@ -39,28 +45,20 @@ A catalyst is NOT just any event, but one that:
 
 ### 1. MINE DATA FOR CATALYSTS
 
-**From Earnings Transcripts:**
+**From earnings** (Management Commentary):
 - Upcoming product launch dates mentioned
 - Guidance on when initiatives will show results
 - Events management highlighted (conferences, investor days)
 - Timeline for strategic initiatives
+- Next earnings date (typically ~3 months from last report)
 
-**From News:**
+**From news**:
 - Announced deals pending close
 - Regulatory proceedings with expected decision dates
 - Scheduled events (conferences, presentations)
 - Court dates for legal matters
 
-**From Fundamentals:**
-- Next earnings date (typically ~3 months from last report)
-- Debt maturity schedule
-- Contract expiration dates if disclosed
-
-**From Technical Analysis:**
-- Key breakout levels that could trigger buying
-- Major support levels where breakdown could trigger selling
-
-**From Reddit/Sentiment:**
+**From social** (Reddit/Community):
 - Events the community is watching
 - Dates traders are focused on
 - Expected catalysts from retail perspective
